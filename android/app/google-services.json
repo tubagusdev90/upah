@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "903299512300",
+    "project_id": "upah-petukang",
+    "storage_bucket": "upah-petukang.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:903299512300:android:81242c1efd2b1d61c9b2c9",
+        "android_client_info": {
+          "package_name": "com.example.upah"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDGwSekV-jnWwO-6CPeytIOZ156852kXsY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
