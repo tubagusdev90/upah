@@ -74,9 +74,11 @@ class PembayaranUpah {
       jumlahHariKerja: (map['jumlahHariKerja'] as num?)?.toInt() ?? 0,
       upahHarian: (map['upahHarian'] as num?)?.toDouble() ?? 0.0,
       totalUpahKotor: (map['totalUpahKotor'] as num?)?.toDouble() ?? 0.0,
-      sisaKasbonSebelumnya: (map['sisaKasbonSebelumnya'] as num?)?.toDouble() ?? 0.0,
+      sisaKasbonSebelumnya:
+          (map['sisaKasbonSebelumnya'] as num?)?.toDouble() ?? 0.0,
       potonganKasbon: (map['potonganKasbon'] as num?)?.toDouble() ?? 0.0,
-      sisaKasbonSetelahnya: (map['sisaKasbonSetelahnya'] as num?)?.toDouble() ?? 0.0,
+      sisaKasbonSetelahnya:
+          (map['sisaKasbonSetelahnya'] as num?)?.toDouble() ?? 0.0,
       totalUpahBersih: (map['totalUpahBersih'] as num?)?.toDouble() ?? 0.0,
       keterangan: map['keterangan'] ?? '',
       createdAt: map['createdAt'] != null

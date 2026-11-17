@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+
 import '../../models/petukang.dart';
 import '../../models/pembayaran_upah.dart';
 import '../../services/database_service.dart';
 import '../../utils/currency_formatter.dart';
 import '../../utils/date_formatter.dart';
 import 'slip_preview_dialog.dart';
+import '../../utils/theme.dart';
 
 class PembayaranUpahScreen extends StatefulWidget {
   final String? initialPetukangId;
@@ -15,7 +17,8 @@ class PembayaranUpahScreen extends StatefulWidget {
   State<PembayaranUpahScreen> createState() => _PembayaranUpahScreenState();
 }
 
-class _PembayaranUpahScreenState extends State<PembayaranUpahScreen> with SingleTickerProviderStateMixin {
+class _PembayaranUpahScreenState extends State<PembayaranUpahScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final DatabaseService _db = DatabaseService();
 
@@ -26,7 +29,9 @@ class _PembayaranUpahScreenState extends State<PembayaranUpahScreen> with Single
   late DateTime _periodeAkhir;
   int _jumlahHariKerja = 0;
   double _potonganKasbon = 0.0;
-  final TextEditingController _potonganKasbonController = TextEditingController(text: '0');
+  final TextEditingController _potonganKasbonController = TextEditingController(
+    text: '0',
+  );
   final TextEditingController _keteranganController = TextEditingController();
 
   String? _historyFilterPetukangId;
@@ -66,13 +71,13 @@ class _PembayaranUpahScreenState extends State<PembayaranUpahScreen> with Single
 
     // Hitung hari kerja belum bayar (biru) dalam periode ini
     final unpaid = _db.getUnpaidWorkDays(p.id, _periodeAwal, _periodeAkhir);
-    _jumlahHariKerja = unpaid.isNotEmpty ? unpaid.length : 6; // default 6 jika belum ada catatan spesifik
+    _jumlahHariKerja = unpaid.length;
 
     // Rekomendasi potongan kasbon: potong sebagian atau 0 jika tidak ada
     if (p.sisaKasbon > 0) {
       // default potong setengah kasbon atau maksimal upah kotor
       final upahKotor = _jumlahHariKerja * p.upahHarian;
-      final saranPotong = (p.sisaKasbon * 0.5).clamp(0.0, upahKotor);
+      final saranPotong = (p.sisaKasbon * 0.5).clamp(0.0, upahKotor).toDouble();
       _potonganKasbon = saranPotong;
       _potonganKasbonController.text = _potonganKasbon.toStringAsFixed(0);
     } else {
@@ -80,6 +85,21 @@ class _PembayaranUpahScreenState extends State<PembayaranUpahScreen> with Single
       _potonganKasbonController.text = '0';
     }
   }
+
+
+Future<void> _showSlipPreview(PembayaranUpah slip) async {
+  if (!mounted) return;
+
+  await showDialog<void>(
+    context: context,
+    useRootNavigator: true,
+    barrierDismissible: true,
+    builder: (dialogContext) {
+      return SlipPreviewDialog(slip: slip);
+    },
+  );
+}
+
 
   void _onPetukangChanged(Petukang p) {
     setState(() {
@@ -110,7 +130,8 @@ class _PembayaranUpahScreenState extends State<PembayaranUpahScreen> with Single
             return const Center(child: Text('Belum ada data petukang.'));
           }
 
-          if (_selectedPetukangId == null || !petukangList.any((p) => p.id == _selectedPetukangId)) {
+          if (_selectedPetukangId == null ||
+              !petukangList.any((p) => p.id == _selectedPetukangId)) {
             WidgetsBinding.instance.addPostFrameCallback((_) {
               if (mounted) {
                 _onPetukangChanged(petukangList.first);
@@ -140,8 +161,14 @@ class _PembayaranUpahScreenState extends State<PembayaranUpahScreen> with Single
 
   Widget _buildFormPembayaran(Petukang petukang, List<Petukang> allPetukang) {
     final upahKotor = _jumlahHariKerja * petukang.upahHarian;
-    final upahBersih = (upahKotor - _potonganKasbon).clamp(0.0, double.infinity);
-    final sisaKasbonAkhir = (petukang.sisaKasbon - _potonganKasbon).clamp(0.0, double.infinity);
+    final upahBersih = (upahKotor - _potonganKasbon).clamp(
+      0.0,
+      double.infinity,
+    );
+    final sisaKasbonAkhir = (petukang.sisaKasbon - _potonganKasbon).clamp(
+      0.0,
+      double.infinity,
+    );
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -154,7 +181,9 @@ class _PembayaranUpahScreenState extends State<PembayaranUpahScreen> with Single
               // Card Pilih Petukang
               Card(
                 elevation: 1,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
@@ -162,11 +191,15 @@ class _PembayaranUpahScreenState extends State<PembayaranUpahScreen> with Single
                     children: [
                       const Text(
                         '1. Pilih Petukang yang Akan Dibayar Upahnya',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
                       ),
                       const SizedBox(height: 12),
                       DropdownButtonFormField<String>(
-                        value: allPetukang.any((p) => p.id == _selectedPetukangId)
+                        value:
+                            allPetukang.any((p) => p.id == _selectedPetukangId)
                             ? _selectedPetukangId
                             : petukang.id,
                         decoration: const InputDecoration(
@@ -177,14 +210,14 @@ class _PembayaranUpahScreenState extends State<PembayaranUpahScreen> with Single
                         items: allPetukang.map((p) {
                           return DropdownMenuItem(
                             value: p.id,
-                            child: Text(
-                              '${p.nama} | ${p.role.label}',
-                            ),
+                            child: Text('${p.nama} | ${p.role.label}'),
                           );
                         }).toList(),
                         onChanged: (val) {
                           if (val != null) {
-                            final p = allPetukang.firstWhere((x) => x.id == val);
+                            final p = allPetukang.firstWhere(
+                              (x) => x.id == val,
+                            );
                             _onPetukangChanged(p);
                           }
                         },
@@ -201,18 +234,28 @@ class _PembayaranUpahScreenState extends State<PembayaranUpahScreen> with Single
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceAround,
                           children: [
-                            _miniInfo('Tanggal Join', DateFormatter.formatShort(petukang.tanggalJoin)),
-                            _miniInfo('Upah Harian', CurrencyFormatter.format(petukang.upahHarian)),
+                            _miniInfo(
+                              'Tanggal Join',
+                              DateFormatter.formatShort(petukang.tanggalJoin),
+                            ),
+                            _miniInfo(
+                              'Upah Harian',
+                              CurrencyFormatter.format(petukang.upahHarian),
+                            ),
                             _miniInfo(
                               'Bayar Terakhir',
                               petukang.tanggalBayarTerakhir != null
-                                  ? DateFormatter.formatShort(petukang.tanggalBayarTerakhir)
+                                  ? DateFormatter.formatShort(
+                                      petukang.tanggalBayarTerakhir,
+                                    )
                                   : 'Belum Pernah',
                             ),
                             _miniInfo(
                               'Kasbon Berjalan',
                               CurrencyFormatter.format(petukang.sisaKasbon),
-                              color: petukang.sisaKasbon > 0 ? Colors.red : Colors.green,
+                              color: petukang.sisaKasbon > 0
+                                  ? Colors.red
+                                  : Colors.green,
                             ),
                           ],
                         ),
@@ -226,7 +269,9 @@ class _PembayaranUpahScreenState extends State<PembayaranUpahScreen> with Single
               // Card Periode & Hari Kerja
               Card(
                 elevation: 1,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
@@ -234,7 +279,10 @@ class _PembayaranUpahScreenState extends State<PembayaranUpahScreen> with Single
                     children: [
                       const Text(
                         '2. Periode Pembayaran & Kehadiran',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
                       ),
                       const SizedBox(height: 6),
                       Container(
@@ -251,7 +299,10 @@ class _PembayaranUpahScreenState extends State<PembayaranUpahScreen> with Single
                             Expanded(
                               child: Text(
                                 'Periode dihitung otomatis mulai sehari setelah tanggal bayar terakhir.',
-                                style: TextStyle(fontSize: 12, color: Colors.blue),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.blue,
+                                ),
                               ),
                             ),
                           ],
@@ -284,7 +335,9 @@ class _PembayaranUpahScreenState extends State<PembayaranUpahScreen> with Single
                                   prefixIcon: Icon(Icons.event),
                                   border: OutlineInputBorder(),
                                 ),
-                                child: Text(DateFormatter.format(_tanggalBayar)),
+                                child: Text(
+                                  DateFormatter.format(_tanggalBayar),
+                                ),
                               ),
                             ),
                           ),
@@ -300,7 +353,9 @@ class _PembayaranUpahScreenState extends State<PembayaranUpahScreen> with Single
                               ),
                               child: Text(
                                 '${DateFormatter.formatShort(_periodeAwal)} s/d ${DateFormatter.formatShort(_periodeAkhir)}',
-                                style: const TextStyle(fontWeight: FontWeight.w600),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ),
                           ),
@@ -321,7 +376,10 @@ class _PembayaranUpahScreenState extends State<PembayaranUpahScreen> with Single
                                 ),
                                 Text(
                                   'Dihitung dari kalender absensi (biru) atau sesuaikan manual',
-                                  style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.grey.shade600,
+                                  ),
                                 ),
                               ],
                             ),
@@ -335,15 +393,21 @@ class _PembayaranUpahScreenState extends State<PembayaranUpahScreen> with Single
                                     : null,
                               ),
                               Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                ),
                                 child: Text(
                                   '$_jumlahHariKerja Hari',
-                                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
                               IconButton.filledTonal(
                                 icon: const Icon(Icons.add),
-                                onPressed: () => setState(() => _jumlahHariKerja++),
+                                onPressed: () =>
+                                    setState(() => _jumlahHariKerja++),
                               ),
                             ],
                           ),
@@ -358,7 +422,9 @@ class _PembayaranUpahScreenState extends State<PembayaranUpahScreen> with Single
               // Card Kasbon & Perhitungan Bersih
               Card(
                 elevation: 1,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 child: Padding(
                   padding: const EdgeInsets.all(16),
                   child: Column(
@@ -366,7 +432,10 @@ class _PembayaranUpahScreenState extends State<PembayaranUpahScreen> with Single
                     children: [
                       const Text(
                         '3. Penyesuaian Potongan Kasbon & Total',
-                        style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
                       ),
                       const SizedBox(height: 12),
 
@@ -374,10 +443,15 @@ class _PembayaranUpahScreenState extends State<PembayaranUpahScreen> with Single
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text('Upah Kotor ($_jumlahHariKerja hari x ${CurrencyFormatter.format(petukang.upahHarian)}):'),
+                          Text(
+                            'Upah Kotor ($_jumlahHariKerja hari x ${CurrencyFormatter.format(petukang.upahHarian)}):',
+                          ),
                           Text(
                             CurrencyFormatter.format(upahKotor),
-                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
                           ),
                         ],
                       ),
@@ -399,11 +473,17 @@ class _PembayaranUpahScreenState extends State<PembayaranUpahScreen> with Single
                               children: [
                                 const Text(
                                   'Potongan Kasbon Sebagian (Fleksibel):',
-                                  style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red),
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.red,
+                                  ),
                                 ),
                                 Text(
                                   'Sisa Kasbon: ${CurrencyFormatter.format(petukang.sisaKasbon)}',
-                                  style: TextStyle(fontSize: 12, color: Colors.red.shade900),
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.red.shade900,
+                                  ),
                                 ),
                               ],
                             ),
@@ -411,8 +491,12 @@ class _PembayaranUpahScreenState extends State<PembayaranUpahScreen> with Single
                             TextFormField(
                               controller: _potonganKasbonController,
                               keyboardType: TextInputType.number,
+                              inputFormatters: [CurrencyInputFormatter()],
                               decoration: const InputDecoration(
-                                prefixIcon: Icon(Icons.remove_circle_outline, color: Colors.red),
+                                prefixIcon: Icon(
+                                  Icons.remove_circle_outline,
+                                  color: Colors.red,
+                                ),
                                 labelText: 'Nominal Potongan Kasbon (Rp)',
                                 hintText: '0',
                                 filled: true,
@@ -421,14 +505,19 @@ class _PembayaranUpahScreenState extends State<PembayaranUpahScreen> with Single
                               ),
                               onChanged: (val) {
                                 setState(() {
-                                  _potonganKasbon = CurrencyFormatter.parse(val);
+                                  _potonganKasbon = CurrencyFormatter.parse(
+                                    val,
+                                  );
                                 });
                               },
                             ),
                             const SizedBox(height: 4),
                             Text(
                               'Sisa kasbon setelah pembayaran ini: ${CurrencyFormatter.format(sisaKasbonAkhir)}',
-                              style: TextStyle(fontSize: 11, color: Colors.grey.shade700),
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.grey.shade700,
+                              ),
                             ),
                           ],
                         ),
@@ -449,32 +538,43 @@ class _PembayaranUpahScreenState extends State<PembayaranUpahScreen> with Single
 
                       // Total Bersih Box
                       Container(
-                        padding: const EdgeInsets.all(16),
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: Colors.green.shade50,
                           borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: Colors.green.shade600, width: 2),
+                          border: Border.all(
+                            color: Colors.green.shade600,
+                            width: 1.5,
+                          ),
                         ),
                         child: Column(
-                          // mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.center,
                           children: [
-                            Column(
-                              //crossAxisAlignment: CrossAxisAlignment.start,
-                              children: const [
-                                Text(
-                                  'TOTAL UPAH DITERIMA (BERSIH):',
-                                  style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF14532D)),
-                                ),
-                                Text(
-                                  'Upah Kotor dikurangi Potongan Kasbon',
-                                  style: TextStyle(fontSize: 11, color: Colors.grey),
-                                ),
-                              ],
+                            const Text(
+                              'TOTAL UPAH DITERIMA (BERSIH)',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                                color: Color(0xFF14532D),
+                              ),
                             ),
+                            const SizedBox(height: 5),
+                            const Text(
+                              'Upah Kotor dikurangi Potongan Kasbon',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.grey,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
                             Text(
                               CurrencyFormatter.format(upahBersih),
+                              textAlign: TextAlign.center,
                               style: const TextStyle(
-                                fontSize: 24,
+                                fontSize: 26,
                                 fontWeight: FontWeight.bold,
                                 color: Color(0xFF14532D),
                               ),
@@ -482,6 +582,7 @@ class _PembayaranUpahScreenState extends State<PembayaranUpahScreen> with Single
                           ],
                         ),
                       ),
+
                       const SizedBox(height: 20),
 
                       // Submit Button
@@ -492,12 +593,17 @@ class _PembayaranUpahScreenState extends State<PembayaranUpahScreen> with Single
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.indigo,
                             foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
                           ),
                           icon: const Icon(Icons.check_circle_outline),
                           label: const Text(
                             'Proses Pembayaran & Cetak Slip Upah',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                           onPressed: () => _prosesPembayaran(petukang),
                         ),
@@ -521,13 +627,19 @@ class _PembayaranUpahScreenState extends State<PembayaranUpahScreen> with Single
           padding: const EdgeInsets.all(16.0),
           child: Row(
             children: [
-              const Text('Filter Petukang: ', style: TextStyle(fontWeight: FontWeight.w600)),
+              const Text(
+                'Filter Petukang: ',
+                style: TextStyle(fontWeight: FontWeight.w600),
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: DropdownButtonFormField<String?>(
                   value: _historyFilterPetukangId,
                   decoration: InputDecoration(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
                     filled: true,
                     fillColor: Colors.grey.shade100,
                     border: OutlineInputBorder(
@@ -536,8 +648,13 @@ class _PembayaranUpahScreenState extends State<PembayaranUpahScreen> with Single
                     ),
                   ),
                   items: [
-                    const DropdownMenuItem(value: null, child: Text('Semua Petukang')),
-                    ...allPetukang.map((p) => DropdownMenuItem(value: p.id, child: Text(p.nama))),
+                    const DropdownMenuItem(
+                      value: null,
+                      child: Text('Semua Petukang'),
+                    ),
+                    ...allPetukang.map(
+                      (p) => DropdownMenuItem(value: p.id, child: Text(p.nama)),
+                    ),
                   ],
                   onChanged: (val) {
                     setState(() => _historyFilterPetukangId = val);
@@ -561,11 +678,18 @@ class _PembayaranUpahScreenState extends State<PembayaranUpahScreen> with Single
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.receipt_long_outlined, size: 56, color: Colors.grey.shade400),
+                      Icon(
+                        Icons.receipt_long_outlined,
+                        size: 56,
+                        color: Colors.grey.shade400,
+                      ),
                       const SizedBox(height: 12),
                       Text(
                         'Belum ada riwayat slip pembayaran upah',
-                        style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.grey.shade600,
+                        ),
                       ),
                     ],
                   ),
@@ -591,7 +715,10 @@ class _PembayaranUpahScreenState extends State<PembayaranUpahScreen> with Single
                         children: [
                           CircleAvatar(
                             backgroundColor: Colors.indigo.shade50,
-                            child: const Icon(Icons.receipt, color: Colors.indigo),
+                            child: const Icon(
+                              Icons.receipt,
+                              color: Colors.indigo,
+                            ),
                           ),
                           const SizedBox(width: 14),
                           Expanded(
@@ -603,11 +730,16 @@ class _PembayaranUpahScreenState extends State<PembayaranUpahScreen> with Single
                                     Expanded(
                                       child: Text(
                                         slip.petukangNama,
-                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                        ),
                                       ),
                                     ),
                                     Text(
-                                      CurrencyFormatter.format(slip.totalUpahBersih),
+                                      CurrencyFormatter.format(
+                                        slip.totalUpahBersih,
+                                      ),
                                       style: const TextStyle(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 16,
@@ -619,31 +751,43 @@ class _PembayaranUpahScreenState extends State<PembayaranUpahScreen> with Single
                                 const SizedBox(height: 4),
                                 Text(
                                   'Periode: ${DateFormatter.formatShort(slip.periodeAwal)} s/d ${DateFormatter.formatShort(slip.periodeAkhir)} (${slip.jumlahHariKerja} Hari Kerja)',
-                                  style: TextStyle(color: Colors.grey.shade700, fontSize: 13),
+                                  style: TextStyle(
+                                    color: Colors.grey.shade700,
+                                    fontSize: 13,
+                                  ),
                                 ),
                                 const SizedBox(height: 4),
                                 Row(
                                   children: [
                                     Text(
                                       'Tgl Bayar: ${DateFormatter.formatShort(slip.tanggalBayar)}',
-                                      style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                                    ),
-                                    if (slip.potonganKasbon > 0) ...[
-                                      const SizedBox(width: 8),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                                        decoration: BoxDecoration(
-                                          color: Colors.red.shade50,
-                                          borderRadius: BorderRadius.circular(4),
-                                        ),
-                                        child: Text(
-                                          'Potong Kasbon: ${CurrencyFormatter.format(slip.potonganKasbon)}',
-                                          style: TextStyle(fontSize: 11, color: Colors.red.shade800),
-                                        ),
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey.shade600,
                                       ),
-                                    ],
+                                    ),
                                   ],
                                 ),
+                                if (slip.potonganKasbon > 0) ...[
+                                  const SizedBox(height: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 1,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.red.shade50,
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      'Potong Kasbon: ${CurrencyFormatter.format(slip.potonganKasbon)}',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.red.shade800,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ],
                             ),
                           ),
@@ -651,15 +795,16 @@ class _PembayaranUpahScreenState extends State<PembayaranUpahScreen> with Single
 
                           // Print Button
                           IconButton.filled(
-                            style: IconButton.styleFrom(backgroundColor: Colors.indigo),
+                            style: IconButton.styleFrom(
+                              backgroundColor: Colors.indigo,
+                            ),
                             tooltip: 'Cetak Slip Upah PDF',
                             icon: const Icon(Icons.print, size: 20),
-                            onPressed: () {
-                              showDialog(
-                                context: context,
-                                builder: (context) => SlipPreviewDialog(slip: slip),
-                              );
+                            
+                            onPressed: () async {
+                              await _showSlipPreview(slip);
                             },
+
                           ),
                         ],
                       ),
@@ -677,7 +822,10 @@ class _PembayaranUpahScreenState extends State<PembayaranUpahScreen> with Single
   Widget _miniInfo(String label, String value, {Color? color}) {
     return Column(
       children: [
-        Text(label, style: TextStyle(fontSize: 10, color: Colors.grey.shade600)),
+        Text(
+          label,
+          style: TextStyle(fontSize: 10, color: Colors.grey.shade600),
+        ),
         const SizedBox(height: 2),
         Text(
           value,
@@ -695,7 +843,32 @@ class _PembayaranUpahScreenState extends State<PembayaranUpahScreen> with Single
     final upahKotor = _jumlahHariKerja * petukang.upahHarian;
     if (_jumlahHariKerja <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Jumlah hari kerja harus minimal 1 hari.')),
+        const SnackBar(
+          content: Text('Jumlah hari kerja harus minimal 1 hari.'),
+        ),
+      );
+      return;
+    }
+    if (_potonganKasbon < 0 ||
+        _potonganKasbon > petukang.sisaKasbon ||
+        _potonganKasbon > upahKotor) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Potongan kasbon tidak boleh melebihi sisa kasbon atau total upah kotor.',
+          ),
+        ),
+      );
+      return;
+    }
+    if (DateFormatter.normalize(_periodeAkhir) !=
+        DateFormatter.normalize(_tanggalBayar)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Tanggal akhir periode harus sama dengan tanggal pembayaran.',
+          ),
+        ),
       );
       return;
     }
@@ -709,9 +882,15 @@ class _PembayaranUpahScreenState extends State<PembayaranUpahScreen> with Single
           'dengan potongan kasbon ${CurrencyFormatter.format(_potonganKasbon)}?',
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Batal')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Batal'),
+          ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.indigo, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.indigo,
+              foregroundColor: Colors.white,
+            ),
             onPressed: () => Navigator.pop(context, true),
             child: const Text('Ya, Proses & Cetak'),
           ),
@@ -719,26 +898,42 @@ class _PembayaranUpahScreenState extends State<PembayaranUpahScreen> with Single
       ),
     );
 
-    if (confirm == true) {
-      final slip = await _db.prosesPembayaranUpah(
-        petukang: petukang,
-        tanggalBayar: _tanggalBayar,
-        periodeAwal: _periodeAwal,
-        periodeAkhir: _periodeAkhir,
-        jumlahHariKerja: _jumlahHariKerja,
-        upahHarian: petukang.upahHarian,
-        totalUpahKotor: upahKotor,
-        potonganKasbon: _potonganKasbon,
-        keterangan: _keteranganController.text.trim(),
-      );
+    
+if (confirm != true) return;
 
-      if (mounted) {
-        // Show success slip dialog
-        showDialog(
-          context: context,
-          builder: (context) => SlipPreviewDialog(slip: slip),
-        );
-      }
-    }
+try {
+  debugPrint('Memulai proses pembayaran petukang: ${petukang.nama}');
+
+  final slip = await _db.prosesPembayaranUpah(
+    petukang: petukang,
+    tanggalBayar: _tanggalBayar,
+    periodeAwal: _periodeAwal,
+    periodeAkhir: _periodeAkhir,
+    jumlahHariKerja: _jumlahHariKerja,
+    upahHarian: petukang.upahHarian,
+    totalUpahKotor: upahKotor,
+    potonganKasbon: _potonganKasbon,
+    keterangan: _keteranganController.text.trim(),
+  );
+
+  debugPrint('Pembayaran berhasil. ID slip: ${slip.id}');
+
+  if (!mounted) return;
+
+  await _showSlipPreview(slip);
+} catch (e, stackTrace) {
+  debugPrint('ERROR PEMBAYARAN / SLIP: $e');
+  debugPrintStack(stackTrace: stackTrace);
+
+  if (!mounted) return;
+
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text('Gagal memproses pembayaran: $e'),
+      backgroundColor: Colors.red,
+    ),
+  );
+}
+
   }
 }

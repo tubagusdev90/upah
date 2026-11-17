@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+
 import '../../models/petukang.dart';
 import '../../services/database_service.dart';
 import '../../utils/currency_formatter.dart';
 import '../../widgets/stat_card.dart';
+import '../../utils/theme.dart';
 
 class DashboardScreen extends StatelessWidget {
   final Function(int) onNavigateTab;
@@ -19,10 +21,7 @@ class DashboardScreen extends StatelessWidget {
           children: [
             Icon(Icons.construction, color: Colors.indigo),
             SizedBox(width: 8),
-            Text(
-              'UpahPetukang',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
+            Text('UpahPetukang', style: TextStyle(fontWeight: FontWeight.bold)),
           ],
         ),
         actions: [
@@ -30,10 +29,14 @@ class DashboardScreen extends StatelessWidget {
             margin: const EdgeInsets.only(right: 16),
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: db.isFirebaseConnected ? Colors.green.shade50 : Colors.amber.shade50,
+              color: db.isFirebaseConnected
+                  ? Colors.green.shade50
+                  : Colors.amber.shade50,
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: db.isFirebaseConnected ? Colors.green.shade400 : Colors.amber.shade600,
+                color: db.isFirebaseConnected
+                    ? Colors.green.shade400
+                    : Colors.amber.shade600,
               ),
             ),
             child: Row(
@@ -42,15 +45,21 @@ class DashboardScreen extends StatelessWidget {
                 Icon(
                   db.isFirebaseConnected ? Icons.cloud_done : Icons.cloud_queue,
                   size: 16,
-                  color: db.isFirebaseConnected ? Colors.green.shade800 : Colors.amber.shade900,
+                  color: db.isFirebaseConnected
+                      ? Colors.green.shade800
+                      : Colors.amber.shade900,
                 ),
                 const SizedBox(width: 6),
                 Text(
-                  db.isFirebaseConnected ? 'Firebase Aktif' : 'Local DB / Offline',
+                  db.isFirebaseConnected
+                      ? 'Firebase Aktif'
+                      : 'Local DB / Offline',
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
-                    color: db.isFirebaseConnected ? Colors.green.shade800 : Colors.amber.shade900,
+                    color: db.isFirebaseConnected
+                        ? Colors.green.shade800
+                        : Colors.amber.shade900,
                   ),
                 ),
               ],
@@ -64,14 +73,29 @@ class DashboardScreen extends StatelessWidget {
         builder: (context, petukangSnap) {
           final petukangList = petukangSnap.data ?? [];
           final totalPetukang = petukangList.length;
-        final totalKasbon = petukangList.fold(0.0, (sum, p) => sum + p.sisaKasbon);
-        // New aggregates
-        final pembayaranList = db.currentPembayaranList;
-        final totalUpahPaid = pembayaranList.fold(0.0, (sum, p) => sum + p.totalUpahBersih);
-        final totalUpahUnpaid = pembayaranList.fold(0.0, (sum, p) => sum + (p.totalUpahKotor - p.totalUpahBersih));
-        final totalKasbonPaid = db.currentKasbonList.fold(0.0, (sum, k) => sum + (k.sisa == 0 ? k.jumlah : 0));
-        final totalKasbonUnpaid = db.currentKasbonList.fold(0.0, (sum, k) => sum + (k.sisa > 0 ? k.sisa : 0));
-          final totalKasbon = petukangList.fold(0.0, (sum, p) => sum + p.sisaKasbon);
+
+          // Aggregates
+          final totalKasbon = petukangList.fold(
+            0.0,
+            (sum, p) => sum + p.sisaKasbon,
+          );
+          final pembayaranList = db.currentPembayaranList;
+          final totalUpahPaid = pembayaranList.fold(
+            0.0,
+            (sum, p) => sum + p.totalUpahBersih,
+          );
+          final totalUpahUnpaid = pembayaranList.fold(
+            0.0,
+            (sum, p) => sum + (p.totalUpahKotor - p.totalUpahBersih),
+          );
+          final totalKasbonPaid = db.currentKasbonList.fold(
+            0.0,
+            (sum, k) => sum + (k.sisa == 0 ? k.jumlah : 0),
+          );
+          final totalKasbonUnpaid = db.currentKasbonList.fold(
+            0.0,
+            (sum, k) => sum + (k.sisa > 0 ? k.sisa : 0),
+          );
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
@@ -100,11 +124,11 @@ class DashboardScreen extends StatelessWidget {
                         ],
                       ),
                       child: Row(
-                        children: [
+                        children: const [
                           Expanded(
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
-                              children: const [
+                              children: [
                                 Text(
                                   'Sistem Manajemen Upah & Petukang',
                                   style: TextStyle(
@@ -116,13 +140,20 @@ class DashboardScreen extends StatelessWidget {
                                 SizedBox(height: 6),
                                 Text(
                                   'Kelola absensi kalender warna, kasbon fleksibel, kenaikan upah, dan cetak slip pembayaran resmi.',
-                                  style: TextStyle(color: Colors.white70, fontSize: 13),
+                                  style: TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 13,
+                                  ),
                                 ),
                               ],
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          const Icon(Icons.handyman_rounded, size: 48, color: Colors.white38),
+                          SizedBox(width: 12),
+                          Icon(
+                            Icons.handyman_rounded,
+                            size: 48,
+                            color: Colors.white38,
+                          ),
                         ],
                       ),
                     ),
@@ -143,7 +174,8 @@ class DashboardScreen extends StatelessWidget {
                             StatCard(
                               title: 'Total Petukang',
                               value: '$totalPetukang Orang',
-                              subtitle: '${petukangList.where((p) => p.role == WorkerRole.kepalaTukang).length} Kepala, ${petukangList.where((p) => p.role == WorkerRole.petukang).length} Tukang, ${petukangList.where((p) => p.role == WorkerRole.kenek).length} Kenek',
+                              subtitle:
+                                  '${petukangList.where((p) => p.role == WorkerRole.kepalaTukang).length} Kepala, ${petukangList.where((p) => p.role == WorkerRole.petukang).length} Tukang, ${petukangList.where((p) => p.role == WorkerRole.kenek).length} Kenek',
                               icon: Icons.groups,
                               color: Colors.indigo,
                               onTap: () => onNavigateTab(1),
@@ -190,7 +222,9 @@ class DashboardScreen extends StatelessWidget {
                             ),
                             StatCard(
                               title: 'Kasbon Belum Bayar',
-                              value: CurrencyFormatter.format(totalKasbonUnpaid),
+                              value: CurrencyFormatter.format(
+                                totalKasbonUnpaid,
+                              ),
                               subtitle: 'Kasbon masih tersisa',
                               icon: Icons.error,
                               color: Colors.red.shade700,
@@ -205,7 +239,10 @@ class DashboardScreen extends StatelessWidget {
                     // Quick Actions
                     const Text(
                       'Menu Aksi Cepat',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 12),
                     Row(
@@ -216,10 +253,15 @@ class DashboardScreen extends StatelessWidget {
                               backgroundColor: Colors.indigo,
                               foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
                             ),
                             icon: const Icon(Icons.payment),
-                            label: const Text('Upah & Slip', style: TextStyle(fontWeight: FontWeight.bold)),
+                            label: const Text(
+                              'Upah & Slip',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
                             onPressed: () => onNavigateTab(4),
                           ),
                         ),
@@ -230,10 +272,15 @@ class DashboardScreen extends StatelessWidget {
                               backgroundColor: Colors.red.shade700,
                               foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
                             ),
                             icon: const Icon(Icons.money_off),
-                            label: const Text('Kasbon', style: TextStyle(fontWeight: FontWeight.bold)),
+                            label: const Text(
+                              'Kasbon',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
                             onPressed: () => onNavigateTab(3),
                           ),
                         ),
@@ -244,10 +291,15 @@ class DashboardScreen extends StatelessWidget {
                               backgroundColor: Colors.blue.shade700,
                               foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
                             ),
                             icon: const Icon(Icons.calendar_today),
-                            label: const Text('Absensi', style: TextStyle(fontWeight: FontWeight.bold)),
+                            label: const Text(
+                              'Absensi',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
                             onPressed: () => onNavigateTab(2),
                           ),
                         ),
@@ -262,7 +314,10 @@ class DashboardScreen extends StatelessWidget {
                         const Flexible(
                           child: Text(
                             'Daftar Petukang Aktif',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
@@ -276,30 +331,48 @@ class DashboardScreen extends StatelessWidget {
 
                     ListView.builder(
                       shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
+                      physics: const NeverScrollableScrollPhysics(), // Perbaikan typo di sini
                       itemCount: petukangList.take(5).length,
                       itemBuilder: (context, index) {
                         final p = petukangList[index];
                         return Card(
                           margin: const EdgeInsets.only(bottom: 8),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
                           child: ListTile(
                             leading: CircleAvatar(
-                              backgroundImage: p.fotoUrl.isNotEmpty ? NetworkImage(p.fotoUrl) : null,
-                              child: p.fotoUrl.isEmpty ? const Icon(Icons.person) : null,
+                              backgroundImage: p.fotoUrl.isNotEmpty
+                                  ? NetworkImage(p.fotoUrl)
+                                  : null,
+                              child: p.fotoUrl.isEmpty
+                                  ? const Icon(Icons.person)
+                                  : null,
                             ),
-                            title: Text(p.nama, style: const TextStyle(fontWeight: FontWeight.bold)),
-                            subtitle: Text('${p.role.label} • Upah: ${CurrencyFormatter.format(p.upahHarian)}/hari'),
+                            title: Text(
+                              p.nama,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            subtitle: Text(
+                              '${p.role.label} • Upah: ${CurrencyFormatter.format(p.upahHarian)}/hari',
+                            ),
                             trailing: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 if (p.sisaKasbon > 0)
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 3,
+                                    ),
                                     decoration: BoxDecoration(
                                       color: Colors.red.shade50,
                                       borderRadius: BorderRadius.circular(6),
-                                      border: Border.all(color: Colors.red.shade200),
+                                      border: Border.all(
+                                        color: Colors.red.shade200,
+                                      ),
                                     ),
                                     child: Text(
                                       'Kasbon: ${CurrencyFormatter.format(p.sisaKasbon)}',
@@ -312,7 +385,10 @@ class DashboardScreen extends StatelessWidget {
                                   ),
                                 const SizedBox(width: 8),
                                 IconButton(
-                                  icon: const Icon(Icons.arrow_forward_ios, size: 16),
+                                  icon: const Icon(
+                                    Icons.arrow_forward_ios,
+                                    size: 16,
+                                  ),
                                   onPressed: () => onNavigateTab(1),
                                 ),
                               ],

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+
 import '../../models/petukang.dart';
 import '../../models/absensi.dart';
 import '../../services/database_service.dart';
 import '../../utils/currency_formatter.dart';
 import '../../utils/date_formatter.dart';
+import '../../utils/theme.dart';
 
 class AbsensiScreen extends StatefulWidget {
   final String? initialPetukangId;
@@ -43,9 +45,7 @@ class _AbsensiScreenState extends State<AbsensiScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Kalender Absensi Petukang'),
-      ),
+      appBar: AppBar(title: const Text('Kalender Absensi Petukang')),
       body: StreamBuilder<List<Petukang>>(
         stream: _db.getPetukangList(),
         initialData: _db.currentPetukangList,
@@ -53,7 +53,11 @@ class _AbsensiScreenState extends State<AbsensiScreen> {
           final petukangList = petukangSnapshot.data ?? [];
 
           if (petukangList.isEmpty) {
-            return const Center(child: Text('Belum ada data petukang. Tambahkan petukang terlebih dahulu.'));
+            return const Center(
+              child: Text(
+                'Belum ada data petukang. Tambahkan petukang terlebih dahulu.',
+              ),
+            );
           }
 
           // Ensure selected petukang
@@ -81,9 +85,17 @@ class _AbsensiScreenState extends State<AbsensiScreen> {
               int countAmber = 0;
               int countMerah = 0;
 
-              final daysInMonth = DateTime(_currentMonth.year, _currentMonth.month + 1, 0).day;
+              final daysInMonth = DateTime(
+                _currentMonth.year,
+                _currentMonth.month + 1,
+                0,
+              ).day;
               for (int day = 1; day <= daysInMonth; day++) {
-                final d = DateTime(_currentMonth.year, _currentMonth.month, day);
+                final d = DateTime(
+                  _currentMonth.year,
+                  _currentMonth.month,
+                  day,
+                );
                 final key = DateFormatter.dateKey(d);
                 final abs = absensiMap[key];
                 if (abs != null) {
@@ -117,10 +129,13 @@ class _AbsensiScreenState extends State<AbsensiScreen> {
                           elevation: 1,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
-                            side: BorderSide(color: Colors.grey.shade300),
+                            side: BorderSide(color: AppTheme.secondary),
                           ),
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
                             child: Row(
                               children: [
                                 CircleAvatar(
@@ -128,7 +143,9 @@ class _AbsensiScreenState extends State<AbsensiScreen> {
                                   backgroundImage: petukang.fotoUrl.isNotEmpty
                                       ? NetworkImage(petukang.fotoUrl)
                                       : null,
-                                  child: petukang.fotoUrl.isEmpty ? const Icon(Icons.person) : null,
+                                  child: petukang.fotoUrl.isEmpty
+                                      ? const Icon(Icons.person)
+                                      : null,
                                 ),
                                 const SizedBox(width: 12),
                                 Expanded(
@@ -141,13 +158,17 @@ class _AbsensiScreenState extends State<AbsensiScreen> {
                                           value: p.id,
                                           child: Text(
                                             '${p.nama} (${p.role.label}) - ${CurrencyFormatter.format(p.upahHarian)}/hari',
-                                            style: const TextStyle(fontWeight: FontWeight.bold),
+                                            style: const TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                            ),
                                           ),
                                         );
                                       }).toList(),
                                       onChanged: (newId) {
                                         if (newId != null) {
-                                          setState(() => _selectedPetukangId = newId);
+                                          setState(
+                                            () => _selectedPetukangId = newId,
+                                          );
                                         }
                                       },
                                     ),
@@ -163,14 +184,22 @@ class _AbsensiScreenState extends State<AbsensiScreen> {
                         Card(
                           elevation: 0,
                           color: Colors.indigo.shade50,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                           child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 IconButton(
-                                  icon: const Icon(Icons.chevron_left, color: Colors.indigo),
+                                  icon: const Icon(
+                                    Icons.chevron_left,
+                                    color: Colors.indigo,
+                                  ),
                                   onPressed: _prevMonth,
                                 ),
                                 Text(
@@ -182,7 +211,10 @@ class _AbsensiScreenState extends State<AbsensiScreen> {
                                   ),
                                 ),
                                 IconButton(
-                                  icon: const Icon(Icons.chevron_right, color: Colors.indigo),
+                                  icon: const Icon(
+                                    Icons.chevron_right,
+                                    color: Colors.indigo,
+                                  ),
                                   onPressed: _nextMonth,
                                 ),
                               ],
@@ -202,7 +234,9 @@ class _AbsensiScreenState extends State<AbsensiScreen> {
                               child: _buildMiniStat(
                                 'Belum Dibayar',
                                 '$countBiru Hari',
-                                CurrencyFormatter.format(countBiru * petukang.upahHarian),
+                                CurrencyFormatter.format(
+                                  countBiru * petukang.upahHarian,
+                                ),
                                 const Color(0xFF2563EB),
                               ),
                             ),
@@ -211,7 +245,9 @@ class _AbsensiScreenState extends State<AbsensiScreen> {
                               child: _buildMiniStat(
                                 'Sudah Dibayar',
                                 '$countHijau Hari',
-                                CurrencyFormatter.format(countHijau * petukang.upahHarian),
+                                CurrencyFormatter.format(
+                                  countHijau * petukang.upahHarian,
+                                ),
                                 const Color(0xFF16A34A),
                               ),
                             ),
@@ -240,7 +276,9 @@ class _AbsensiScreenState extends State<AbsensiScreen> {
                         // Calendar Grid
                         Card(
                           elevation: 2,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
                           child: Padding(
                             padding: const EdgeInsets.all(16.0),
                             child: Column(
@@ -248,13 +286,77 @@ class _AbsensiScreenState extends State<AbsensiScreen> {
                                 // Day headers (Senin - Minggu)
                                 Row(
                                   children: const [
-                                    Expanded(child: Center(child: Text('Sen', style: TextStyle(fontWeight: FontWeight.bold)))),
-                                    Expanded(child: Center(child: Text('Sel', style: TextStyle(fontWeight: FontWeight.bold)))),
-                                    Expanded(child: Center(child: Text('Rab', style: TextStyle(fontWeight: FontWeight.bold)))),
-                                    Expanded(child: Center(child: Text('Kam', style: TextStyle(fontWeight: FontWeight.bold)))),
-                                    Expanded(child: Center(child: Text('Jum', style: TextStyle(fontWeight: FontWeight.bold)))),
-                                    Expanded(child: Center(child: Text('Sab', style: TextStyle(fontWeight: FontWeight.bold)))),
-                                    Expanded(child: Center(child: Text('Min', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red)))),
+                                    Expanded(
+                                      child: Center(
+                                        child: Text(
+                                          'Sen',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    Expanded(
+                                      child: Center(
+                                        child: Text(
+                                          'Sel',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    Expanded(
+                                      child: Center(
+                                        child: Text(
+                                          'Rab',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    Expanded(
+                                      child: Center(
+                                        child: Text(
+                                          'Kam',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    Expanded(
+                                      child: Center(
+                                        child: Text(
+                                          'Jum',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    Expanded(
+                                      child: Center(
+                                        child: Text(
+                                          'Sab',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    Expanded(
+                                      child: Center(
+                                        child: Text(
+                                          'Min',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.red,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
                                   ],
                                 ),
                                 const Divider(height: 20),
@@ -270,12 +372,19 @@ class _AbsensiScreenState extends State<AbsensiScreen> {
                         // Tip
                         Row(
                           children: [
-                            Icon(Icons.info_outline, size: 16, color: Colors.grey.shade600),
+                            Icon(
+                              Icons.info_outline,
+                              size: 16,
+                              color: Colors.grey.shade600,
+                            ),
                             const SizedBox(width: 6),
                             Expanded(
                               child: Text(
                                 'Klik tanggal pada kalender untuk mengubah status kehadiran (Kerja, Libur, dll).',
-                                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey.shade600,
+                                ),
                               ),
                             ),
                           ],
@@ -304,8 +413,14 @@ class _AbsensiScreenState extends State<AbsensiScreen> {
           runSpacing: 8,
           alignment: WrapAlignment.center,
           children: [
-            _legendItem(const Color(0xFF2563EB), 'Biru: Kerja (Upah Belum Dibayar)'),
-            _legendItem(const Color(0xFF16A34A), 'Hijau: Kerja (Sudah Dibayar)'),
+            _legendItem(
+              const Color(0xFF2563EB),
+              'Biru: Kerja (Upah Belum Dibayar)',
+            ),
+            _legendItem(
+              const Color(0xFF16A34A),
+              'Hijau: Kerja (Sudah Dibayar)',
+            ),
             _legendItem(const Color(0xFFD97706), 'Amber: Tanggal Pembayaran'),
             _legendItem(const Color(0xFFDC2626), 'Merah: Libur / Tidak Masuk'),
           ],
@@ -327,7 +442,10 @@ class _AbsensiScreenState extends State<AbsensiScreen> {
           ),
         ),
         const SizedBox(width: 6),
-        Text(text, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
+        Text(
+          text,
+          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+        ),
       ],
     );
   }
@@ -342,18 +460,43 @@ class _AbsensiScreenState extends State<AbsensiScreen> {
       ),
       child: Column(
         children: [
-          Text(label, style: TextStyle(fontSize: 10, color: Colors.grey.shade700)),
+          Text(
+            label,
+            style: TextStyle(fontSize: 10, color: Colors.grey.shade700),
+          ),
           const SizedBox(height: 2),
-          Text(value, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: color)),
-          Text(sub, style: TextStyle(fontSize: 9, color: Colors.grey.shade600), maxLines: 1),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+          Text(
+            sub,
+            style: TextStyle(fontSize: 9, color: Colors.grey.shade600),
+            maxLines: 1,
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildCalendarGrid(Petukang petukang, Map<String, Absensi> absensiMap) {
-    final firstDayOfMonth = DateTime(_currentMonth.year, _currentMonth.month, 1);
-    final daysInMonth = DateTime(_currentMonth.year, _currentMonth.month + 1, 0).day;
+  Widget _buildCalendarGrid(
+    Petukang petukang,
+    Map<String, Absensi> absensiMap,
+  ) {
+    final firstDayOfMonth = DateTime(
+      _currentMonth.year,
+      _currentMonth.month,
+      1,
+    );
+    final daysInMonth = DateTime(
+      _currentMonth.year,
+      _currentMonth.month + 1,
+      0,
+    ).day;
 
     // weekday: 1 = Monday, 7 = Sunday
     final startWeekday = firstDayOfMonth.weekday; // 1 to 7
@@ -394,9 +537,6 @@ class _AbsensiScreenState extends State<AbsensiScreen> {
             statusIndicator = 'Libur';
             break;
         }
-      } else if (date.weekday == 7) {
-        // Default Sunday is red
-        textColor = Colors.red.shade400;
       }
 
       currentWeek.add(
@@ -411,7 +551,10 @@ class _AbsensiScreenState extends State<AbsensiScreen> {
                 decoration: BoxDecoration(
                   color: cellBg,
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: borderColor, width: abs != null ? 1.5 : 1),
+                  border: Border.all(
+                    color: borderColor,
+                    width: abs != null ? 1.5 : 1,
+                  ),
                 ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -420,14 +563,19 @@ class _AbsensiScreenState extends State<AbsensiScreen> {
                       '$day',
                       style: TextStyle(
                         fontSize: 14,
-                        fontWeight: abs != null ? FontWeight.bold : FontWeight.w500,
+                        fontWeight: abs != null
+                            ? FontWeight.bold
+                            : FontWeight.w500,
                         color: textColor,
                       ),
                     ),
                     if (statusIndicator.isNotEmpty)
                       Container(
                         margin: const EdgeInsets.only(top: 2),
-                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 4,
+                          vertical: 1,
+                        ),
                         decoration: BoxDecoration(
                           color: abs!.status.color,
                           borderRadius: BorderRadius.circular(4),
@@ -466,108 +614,144 @@ class _AbsensiScreenState extends State<AbsensiScreen> {
     return Column(children: rows);
   }
 
-  void _openAbsenDialog(Petukang petukang, DateTime date, Absensi? currentAbs) async {
-    AbsenStatus selectedStatus = currentAbs?.status ??
-        (date.weekday == 7 ? AbsenStatus.libur : AbsenStatus.kerjaBelumBayar);
-    final noteController = TextEditingController(text: currentAbs?.keterangan ?? '');
+  void _openAbsenDialog(
+    Petukang petukang,
+    DateTime date,
+    Absensi? currentAbs,
+  ) async {
+    AbsenStatus selectedStatus =
+        currentAbs?.status ?? AbsenStatus.kerjaBelumBayar;
+    final noteController = TextEditingController(
+      text: currentAbs?.keterangan ?? '',
+    );
 
     final result = await showDialog<bool>(
       context: context,
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
-            return AlertDialog(
-              title: Row(
-                children: [
-                  const Icon(Icons.edit_calendar, color: Colors.indigo),
-                  const SizedBox(width: 8),
-                  Text(DateFormatter.formatWithDay(date)),
-                ],
-              ),
-              content: SizedBox(
-                width: 400,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
+            return SingleChildScrollView(
+              child: AlertDialog(
+                title: Row(
                   children: [
-                    Text('Petukang: ${petukang.nama}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                    Text('Tarif Upah: ${CurrencyFormatter.format(petukang.upahHarian)}/hari',
-                        style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
-                    const SizedBox(height: 14),
-                    const Text('Pilih Status Kehadiran:', style: TextStyle(fontWeight: FontWeight.w600)),
-                    const SizedBox(height: 8),
-
-                    // 4 Options
-                    ...AbsenStatus.values.map((status) {
-                      final isSelected = selectedStatus == status;
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 6),
-                        decoration: BoxDecoration(
-                          color: isSelected ? status.color.withOpacity(0.12) : Colors.transparent,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: isSelected ? status.color : Colors.grey.shade300,
-                            width: isSelected ? 1.8 : 1,
-                          ),
-                        ),
-                        child: RadioListTile<AbsenStatus>(
-                          dense: true,
-                          value: status,
-                          groupValue: selectedStatus,
-                          activeColor: status.color,
-                          title: Row(
-                            children: [
-                              Container(
-                                width: 12,
-                                height: 12,
-                                decoration: BoxDecoration(color: status.color, shape: BoxShape.circle),
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  status.label,
-                                  style: TextStyle(
-                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                                    color: isSelected ? status.color : Colors.black87,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          onChanged: (val) {
-                            if (val != null) {
-                              setDialogState(() => selectedStatus = val);
-                            }
-                          },
-                        ),
-                      );
-                    }),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: noteController,
-                      decoration: const InputDecoration(
-                        labelText: 'Catatan / Keterangan (Opsional)',
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.note_alt_outlined),
+                    const Icon(Icons.edit_calendar, color: Colors.indigo),
+                    const SizedBox(width: 8),
+                    Text(
+                      DateFormatter.formatWithDay(date),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
                       ),
                     ),
                   ],
                 ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context, false),
-                  child: const Text('Batal'),
-                ),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: selectedStatus.color,
-                    foregroundColor: Colors.white,
+                content: SizedBox(
+                  width: 400,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Petukang: ${petukang.nama}',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        'Tarif Upah: ${CurrencyFormatter.format(petukang.upahHarian)}/hari',
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 12,
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      const Text(
+                        'Pilih Status Kehadiran:',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 8),
+
+                      // 4 Options
+                      ...AbsenStatus.values.map((status) {
+                        final isSelected = selectedStatus == status;
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 6),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? status.color.withOpacity(0.12)
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: isSelected
+                                  ? status.color
+                                  : Colors.grey.shade300,
+                              width: isSelected ? 1.8 : 1,
+                            ),
+                          ),
+                          child: RadioListTile<AbsenStatus>(
+                            dense: true,
+                            value: status,
+                            groupValue: selectedStatus,
+                            activeColor: status.color,
+                            title: Row(
+                              children: [
+                                Container(
+                                  width: 12,
+                                  height: 12,
+                                  decoration: BoxDecoration(
+                                    color: status.color,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    status.label,
+                                    style: TextStyle(
+                                      fontWeight: isSelected
+                                          ? FontWeight.bold
+                                          : FontWeight.normal,
+                                      color: isSelected
+                                          ? status.color
+                                          : Colors.black87,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            onChanged: (val) {
+                              if (val != null) {
+                                setDialogState(() => selectedStatus = val);
+                              }
+                            },
+                          ),
+                        );
+                      }),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: noteController,
+                        decoration: const InputDecoration(
+                          labelText: 'Catatan / Keterangan (Opsional)',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.note_alt_outlined),
+                        ),
+                      ),
+                    ],
                   ),
-                  onPressed: () => Navigator.pop(context, true),
-                  child: const Text('Simpan Kehadiran'),
                 ),
-              ],
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: const Text('Batal'),
+                  ),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: selectedStatus.color,
+                      foregroundColor: Colors.white,
+                    ),
+                    onPressed: () => Navigator.pop(context, true),
+                    child: const Text('Simpan Kehadiran'),
+                  ),
+                ],
+              ),
             );
           },
         );

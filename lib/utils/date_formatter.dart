@@ -12,7 +12,7 @@ class DateFormatter {
     'September',
     'Oktober',
     'November',
-    'Desember'
+    'Desember',
   ];
 
   static const List<String> _hari = [
@@ -22,7 +22,7 @@ class DateFormatter {
     'Kamis',
     'Jumat',
     'Sabtu',
-    'Minggu'
+    'Minggu',
   ];
 
   static String format(DateTime? date) {

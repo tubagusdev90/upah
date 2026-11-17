@@ -34,7 +34,7 @@ class CurrencyInputFormatter extends TextInputFormatter {
 
     // Ambil hanya angka dari input pengguna
     final numericString = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
-    
+
     if (numericString.isEmpty) {
       return newValue.copyWith(text: '');
     }

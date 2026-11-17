@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+
 import '../../models/petukang.dart';
 import '../../utils/currency_formatter.dart';
 import '../../utils/date_formatter.dart';
+import '../../utils/theme.dart';
 
 class PetukangFormDialog extends StatefulWidget {
   final Petukang? petukang;
@@ -40,7 +42,9 @@ class _PetukangFormDialogState extends State<PetukangFormDialog> {
     _upahHarianController = TextEditingController(
       text: p != null ? p.upahHarian.toStringAsFixed(0) : '150000',
     );
-    _fotoUrlController = TextEditingController(text: p?.fotoUrl ?? _presetAvatars.first);
+    _fotoUrlController = TextEditingController(
+      text: p?.fotoUrl ?? _presetAvatars.first,
+    );
     _selectedRole = p?.role ?? WorkerRole.petukang;
     _selectedTanggalJoin = p?.tanggalJoin ?? DateTime.now();
   }
@@ -61,9 +65,15 @@ class _PetukangFormDialogState extends State<PetukangFormDialog> {
     return AlertDialog(
       title: Row(
         children: [
-          Icon(isEditing ? Icons.edit_note : Icons.person_add_alt_1, color: Colors.indigo),
+          Icon(
+            isEditing ? Icons.edit_note : Icons.person_add_alt_1,
+            color: Colors.indigo,
+          ),
           const SizedBox(width: 8),
-          Text(isEditing ? 'Edit Data Petukang' : 'Tambah Petukang Baru'),
+          Text(
+            isEditing ? 'Edit Data Petukang' : 'Tambah Petukang Baru',
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
         ],
       ),
       content: SingleChildScrollView(
@@ -86,11 +96,18 @@ class _PetukangFormDialogState extends State<PetukangFormDialog> {
                             ? NetworkImage(_fotoUrlController.text)
                             : null,
                         child: _fotoUrlController.text.isEmpty
-                            ? const Icon(Icons.person, size: 40, color: Colors.indigo)
+                            ? const Icon(
+                                Icons.person,
+                                size: 40,
+                                color: Colors.indigo,
+                              )
                             : null,
                       ),
                       const SizedBox(height: 8),
-                      const Text('Pilih Foto Profil Cepat:', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                      const Text(
+                        'Pilih Foto Profil Cepat:',
+                        style: TextStyle(fontSize: 12, color: Colors.grey),
+                      ),
                       const SizedBox(height: 4),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -107,7 +124,9 @@ class _PetukangFormDialogState extends State<PetukangFormDialog> {
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                  color: isSelected ? Colors.indigo : Colors.transparent,
+                                  color: isSelected
+                                      ? Colors.indigo
+                                      : Colors.transparent,
                                   width: 2.5,
                                 ),
                               ),
@@ -132,7 +151,9 @@ class _PetukangFormDialogState extends State<PetukangFormDialog> {
                     prefixIcon: Icon(Icons.person),
                     border: OutlineInputBorder(),
                   ),
-                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Nama wajib diisi' : null,
+                  validator: (v) => (v == null || v.trim().isEmpty)
+                      ? 'Nama wajib diisi'
+                      : null,
                 ),
                 const SizedBox(height: 14),
 
@@ -166,7 +187,9 @@ class _PetukangFormDialogState extends State<PetukangFormDialog> {
                     hintText: 'Contoh: 081234567890',
                     border: OutlineInputBorder(),
                   ),
-                  validator: (v) => (v == null || v.trim().isEmpty) ? 'Nomor WA wajib diisi' : null,
+                  validator: (v) => (v == null || v.trim().isEmpty)
+                      ? 'Nomor WA wajib diisi'
+                      : null,
                 ),
                 const SizedBox(height: 14),
 
@@ -174,6 +197,7 @@ class _PetukangFormDialogState extends State<PetukangFormDialog> {
                 TextFormField(
                   controller: _upahHarianController,
                   keyboardType: TextInputType.number,
+                  inputFormatters: [CurrencyInputFormatter()],
                   decoration: const InputDecoration(
                     labelText: 'Upah Harian (Rp) *',
                     prefixIcon: Icon(Icons.monetization_on_outlined),
@@ -181,7 +205,8 @@ class _PetukangFormDialogState extends State<PetukangFormDialog> {
                     border: OutlineInputBorder(),
                   ),
                   validator: (v) {
-                    if (v == null || v.trim().isEmpty) return 'Upah harian wajib diisi';
+                    if (v == null || v.trim().isEmpty)
+                      return 'Upah harian wajib diisi';
                     final numVal = CurrencyFormatter.parse(v);
                     if (numVal <= 0) return 'Upah harus lebih dari 0';
                     return null;

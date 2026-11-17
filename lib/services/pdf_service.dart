@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
@@ -100,7 +101,10 @@ class PdfService {
                             'Periode Upah',
                             '${DateFormatter.formatShort(slip.periodeAwal)} s/d ${DateFormatter.formatShort(slip.periodeAkhir)}',
                           ),
-                          _buildPdfInfoRow('Tgl Pembayaran', DateFormatter.formatShort(slip.tanggalBayar)),
+                          _buildPdfInfoRow(
+                            'Tgl Pembayaran',
+                            DateFormatter.formatShort(slip.tanggalBayar),
+                          ),
                         ],
                       ),
                     ],
@@ -123,10 +127,16 @@ class PdfService {
 
                 // Total Diterima Bersih Box
                 pw.Container(
-                  padding: const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const pw.EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   decoration: pw.BoxDecoration(
                     color: PdfColors.green50,
-                    border: pw.Border.all(color: PdfColors.green700, width: 1.2),
+                    border: pw.Border.all(
+                      color: PdfColors.green700,
+                      width: 1.2,
+                    ),
                     borderRadius: pw.BorderRadius.circular(6),
                   ),
                   child: pw.Row(
@@ -157,7 +167,10 @@ class PdfService {
                 if (slip.keterangan.isNotEmpty) ...[
                   pw.Text(
                     'Keterangan: ${slip.keterangan}',
-                    style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700),
+                    style: const pw.TextStyle(
+                      fontSize: 8,
+                      color: PdfColors.grey700,
+                    ),
                   ),
                   pw.SizedBox(height: 12),
                 ],
@@ -170,21 +183,33 @@ class PdfService {
                   children: [
                     pw.Column(
                       children: [
-                        pw.Text('Penerima Upah,', style: const pw.TextStyle(fontSize: 9)),
+                        pw.Text(
+                          'Penerima Upah,',
+                          style: const pw.TextStyle(fontSize: 9),
+                        ),
                         pw.SizedBox(height: 36),
                         pw.Text(
                           '( ${slip.petukangNama} )',
-                          style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold),
+                          style: pw.TextStyle(
+                            fontSize: 9,
+                            fontWeight: pw.FontWeight.bold,
+                          ),
                         ),
                       ],
                     ),
                     pw.Column(
                       children: [
-                        pw.Text('Mandor / Bendahara,', style: const pw.TextStyle(fontSize: 9)),
+                        pw.Text(
+                          'Mandor / Bendahara,',
+                          style: const pw.TextStyle(fontSize: 9),
+                        ),
                         pw.SizedBox(height: 36),
                         pw.Text(
                           '( ..................................... )',
-                          style: pw.TextStyle(fontSize: 9, fontWeight: pw.FontWeight.bold),
+                          style: pw.TextStyle(
+                            fontSize: 9,
+                            fontWeight: pw.FontWeight.bold,
+                          ),
                         ),
                       ],
                     ),
@@ -230,15 +255,35 @@ class PdfService {
           children: [
             pw.Padding(
               padding: const pw.EdgeInsets.all(5),
-              child: pw.Text('Deskripsi', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold)),
+              child: pw.Text(
+                'Deskripsi',
+                style: pw.TextStyle(
+                  fontSize: 8,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+              ),
             ),
             pw.Padding(
               padding: const pw.EdgeInsets.all(5),
-              child: pw.Text('Jumlah / Rate', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold), textAlign: pw.TextAlign.center),
+              child: pw.Text(
+                'Jumlah / Rate',
+                style: pw.TextStyle(
+                  fontSize: 8,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+                textAlign: pw.TextAlign.center,
+              ),
             ),
             pw.Padding(
               padding: const pw.EdgeInsets.all(5),
-              child: pw.Text('Subtotal', style: pw.TextStyle(fontSize: 8, fontWeight: pw.FontWeight.bold), textAlign: pw.TextAlign.right),
+              child: pw.Text(
+                'Subtotal',
+                style: pw.TextStyle(
+                  fontSize: 8,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+                textAlign: pw.TextAlign.right,
+              ),
             ),
           ],
         ),
@@ -246,7 +291,10 @@ class PdfService {
           children: [
             pw.Padding(
               padding: const pw.EdgeInsets.all(5),
-              child: pw.Text('Hari Kerja Masuk', style: const pw.TextStyle(fontSize: 8)),
+              child: pw.Text(
+                'Hari Kerja Masuk',
+                style: const pw.TextStyle(fontSize: 8),
+              ),
             ),
             pw.Padding(
               padding: const pw.EdgeInsets.all(5),
@@ -273,23 +321,40 @@ class PdfService {
               child: pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
                 children: [
-                  pw.Text('Potongan Kasbon (Sebagian)', style: const pw.TextStyle(fontSize: 8, color: PdfColors.red700)),
+                  pw.Text(
+                    'Potongan Kasbon (Sebagian)',
+                    style: const pw.TextStyle(
+                      fontSize: 8,
+                      color: PdfColors.red700,
+                    ),
+                  ),
                   pw.Text(
                     'Sisa Kasbon: ${CurrencyFormatter.format(slip.sisaKasbonSebelumnya)} -> ${CurrencyFormatter.format(slip.sisaKasbonSetelahnya)}',
-                    style: const pw.TextStyle(fontSize: 7, color: PdfColors.grey600),
+                    style: const pw.TextStyle(
+                      fontSize: 7,
+                      color: PdfColors.grey600,
+                    ),
                   ),
                 ],
               ),
             ),
             pw.Padding(
               padding: const pw.EdgeInsets.all(5),
-              child: pw.Text('Disesuaikan', style: const pw.TextStyle(fontSize: 8), textAlign: pw.TextAlign.center),
+              child: pw.Text(
+                'Disesuaikan',
+                style: const pw.TextStyle(fontSize: 8),
+                textAlign: pw.TextAlign.center,
+              ),
             ),
             pw.Padding(
               padding: const pw.EdgeInsets.all(5),
               child: pw.Text(
                 '- ${CurrencyFormatter.format(slip.potonganKasbon)}',
-                style: pw.TextStyle(fontSize: 8, color: PdfColors.red700, fontWeight: pw.FontWeight.bold),
+                style: pw.TextStyle(
+                  fontSize: 8,
+                  color: PdfColors.red700,
+                  fontWeight: pw.FontWeight.bold,
+                ),
                 textAlign: pw.TextAlign.right,
               ),
             ),
@@ -303,7 +368,8 @@ class PdfService {
     final pdfBytes = await generateSlipUpahPdf(slip);
     await Printing.layoutPdf(
       onLayout: (PdfPageFormat format) async => pdfBytes,
-      name: 'Slip_Upah_${slip.petukangNama.replaceAll(" ", "_")}_${DateFormatter.formatShort(slip.tanggalBayar)}',
+      name:
+          'Slip_Upah_${slip.petukangNama.replaceAll(" ", "_")}_${DateFormatter.formatShort(slip.tanggalBayar)}',
     );
   }
 }

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+
 import '../../models/petukang.dart';
 import '../../services/database_service.dart';
 import '../../utils/currency_formatter.dart';
 import '../../utils/date_formatter.dart';
 import 'petukang_form_dialog.dart';
 import 'naikkan_upah_dialog.dart';
+import '../../utils/theme.dart';
 
 class PetukangListScreen extends StatefulWidget {
   const PetukangListScreen({super.key});
@@ -63,7 +65,10 @@ class _PetukangListScreenState extends State<PetukangListScreen> {
                     prefixIcon: const Icon(Icons.search),
                     filled: true,
                     fillColor: Colors.grey.shade100,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+                    contentPadding: const EdgeInsets.symmetric(
+                      vertical: 0,
+                      horizontal: 16,
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide.none,
@@ -81,7 +86,8 @@ class _PetukangListScreenState extends State<PetukangListScreen> {
                       FilterChip(
                         label: const Text('Semua Role'),
                         selected: _selectedRoleFilter == null,
-                        onSelected: (_) => setState(() => _selectedRoleFilter = null),
+                        onSelected: (_) =>
+                            setState(() => _selectedRoleFilter = null),
                       ),
                       const SizedBox(width: 8),
                       ...WorkerRole.values.map((role) {
@@ -115,9 +121,12 @@ class _PetukangListScreenState extends State<PetukangListScreen> {
                 final list = snapshot.data ?? [];
 
                 final filteredList = list.where((p) {
-                  final matchesSearch = p.nama.toLowerCase().contains(_searchQuery) ||
+                  final matchesSearch =
+                      p.nama.toLowerCase().contains(_searchQuery) ||
                       p.nomorWa.contains(_searchQuery);
-                  final matchesRole = _selectedRoleFilter == null || p.role == _selectedRoleFilter;
+                  final matchesRole =
+                      _selectedRoleFilter == null ||
+                      p.role == _selectedRoleFilter;
                   return matchesSearch && matchesRole;
                 }).toList();
 
@@ -126,11 +135,18 @@ class _PetukangListScreenState extends State<PetukangListScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.engineering_outlined, size: 64, color: Colors.grey.shade400),
+                        Icon(
+                          Icons.engineering_outlined,
+                          size: 64,
+                          color: Colors.grey.shade400,
+                        ),
                         const SizedBox(height: 12),
                         Text(
                           'Belum ada data petukang',
-                          style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.grey.shade600,
+                          ),
                         ),
                         const SizedBox(height: 8),
                         ElevatedButton.icon(
@@ -144,7 +160,12 @@ class _PetukangListScreenState extends State<PetukangListScreen> {
                 }
 
                 return ListView.builder(
-                  padding: const EdgeInsets.only(left: 16, right: 16, top: 12, bottom: 80),
+                  padding: const EdgeInsets.only(
+                    left: 16,
+                    right: 16,
+                    top: 12,
+                    bottom: 80,
+                  ),
                   itemCount: filteredList.length,
                   itemBuilder: (context, index) {
                     final petukang = filteredList[index];
@@ -170,7 +191,11 @@ class _PetukangListScreenState extends State<PetukangListScreen> {
                                   ? NetworkImage(petukang.fotoUrl)
                                   : null,
                               child: petukang.fotoUrl.isEmpty
-                                  ? Icon(Icons.person, color: roleColor, size: 30)
+                                  ? Icon(
+                                      Icons.person,
+                                      color: roleColor,
+                                      size: 30,
+                                    )
                                   : null,
                             ),
                             const SizedBox(width: 14),
@@ -192,11 +217,18 @@ class _PetukangListScreenState extends State<PetukangListScreen> {
                                         ),
                                       ),
                                       Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 3,
+                                        ),
                                         decoration: BoxDecoration(
                                           color: roleColor.withOpacity(0.1),
-                                          borderRadius: BorderRadius.circular(6),
-                                          border: Border.all(color: roleColor.withOpacity(0.3)),
+                                          borderRadius: BorderRadius.circular(
+                                            6,
+                                          ),
+                                          border: Border.all(
+                                            color: roleColor.withOpacity(0.3),
+                                          ),
                                         ),
                                         child: Text(
                                           petukang.role.label,
@@ -212,34 +244,59 @@ class _PetukangListScreenState extends State<PetukangListScreen> {
                                   const SizedBox(height: 6),
                                   Row(
                                     children: [
-                                      const Icon(Icons.phone_android, size: 14, color: Colors.green),
+                                      const Icon(
+                                        Icons.phone_android,
+                                        size: 14,
+                                        color: Colors.green,
+                                      ),
                                       const SizedBox(width: 4),
                                       Text(
                                         petukang.nomorWa,
-                                        style: TextStyle(color: Colors.grey.shade700, fontSize: 13),
+                                        style: TextStyle(
+                                          color: Colors.grey.shade700,
+                                          fontSize: 13,
+                                        ),
                                       ),
                                     ],
                                   ),
                                   const SizedBox(height: 4),
                                   Row(
                                     children: [
-                                      const Icon(Icons.calendar_today, size: 14, color: Colors.blueGrey),
+                                      const Icon(
+                                        Icons.calendar_today,
+                                        size: 14,
+                                        color: Colors.blueGrey,
+                                      ),
                                       const SizedBox(width: 4),
                                       Text(
                                         'Join: ${DateFormatter.formatShort(petukang.tanggalJoin)}',
-                                        style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                                        style: TextStyle(
+                                          color: Colors.grey.shade600,
+                                          fontSize: 12,
+                                        ),
                                       ),
-                                      if (petukang.tanggalBayarTerakhir != null) ...[
-                                        const SizedBox(width: 12),
-                                        const Icon(Icons.check_circle_outline, size: 14, color: Colors.amber),
+                                    ],
+                                  ),
+                                  if (petukang.tanggalBayarTerakhir !=
+                                      null) ...[
+                                    Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.check_circle_outline,
+                                          size: 14,
+                                          color: Colors.amber,
+                                        ),
                                         const SizedBox(width: 4),
                                         Text(
                                           'Bayar terakhir: ${DateFormatter.formatShort(petukang.tanggalBayarTerakhir)}',
-                                          style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                                          style: TextStyle(
+                                            color: Colors.grey.shade600,
+                                            fontSize: 12,
+                                          ),
                                         ),
                                       ],
-                                    ],
-                                  ),
+                                    ),
+                                  ],
                                   const SizedBox(height: 8),
 
                                   // Upah & Kasbon Badges
@@ -248,16 +305,27 @@ class _PetukangListScreenState extends State<PetukangListScreen> {
                                     runSpacing: 4,
                                     children: [
                                       Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                          vertical: 4,
+                                        ),
                                         decoration: BoxDecoration(
                                           color: Colors.blue.shade50,
-                                          borderRadius: BorderRadius.circular(6),
-                                          border: Border.all(color: Colors.blue.shade200),
+                                          borderRadius: BorderRadius.circular(
+                                            6,
+                                          ),
+                                          border: Border.all(
+                                            color: Colors.blue.shade200,
+                                          ),
                                         ),
                                         child: Row(
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
-                                            const Icon(Icons.payments, size: 14, color: Colors.blue),
+                                            const Icon(
+                                              Icons.payments,
+                                              size: 14,
+                                              color: Colors.blue,
+                                            ),
                                             const SizedBox(width: 4),
                                             Text(
                                               '${CurrencyFormatter.format(petukang.upahHarian)}/hari',
@@ -271,12 +339,17 @@ class _PetukangListScreenState extends State<PetukangListScreen> {
                                         ),
                                       ),
                                       Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                          vertical: 4,
+                                        ),
                                         decoration: BoxDecoration(
                                           color: petukang.sisaKasbon > 0
                                               ? Colors.red.shade50
                                               : Colors.grey.shade100,
-                                          borderRadius: BorderRadius.circular(6),
+                                          borderRadius: BorderRadius.circular(
+                                            6,
+                                          ),
                                           border: Border.all(
                                             color: petukang.sisaKasbon > 0
                                                 ? Colors.red.shade300
@@ -289,7 +362,9 @@ class _PetukangListScreenState extends State<PetukangListScreen> {
                                             Icon(
                                               Icons.money_off,
                                               size: 14,
-                                              color: petukang.sisaKasbon > 0 ? Colors.red : Colors.grey,
+                                              color: petukang.sisaKasbon > 0
+                                                  ? Colors.red
+                                                  : Colors.grey,
                                             ),
                                             const SizedBox(width: 4),
                                             Text(
@@ -328,7 +403,11 @@ class _PetukangListScreenState extends State<PetukangListScreen> {
                                   value: 'naikkan',
                                   child: Row(
                                     children: [
-                                      Icon(Icons.trending_up, color: Colors.green, size: 20),
+                                      Icon(
+                                        Icons.trending_up,
+                                        color: Colors.green,
+                                        size: 20,
+                                      ),
                                       SizedBox(width: 8),
                                       Text('Naikkan Upah'),
                                     ],
@@ -338,7 +417,11 @@ class _PetukangListScreenState extends State<PetukangListScreen> {
                                   value: 'edit',
                                   child: Row(
                                     children: [
-                                      Icon(Icons.edit, color: Colors.indigo, size: 20),
+                                      Icon(
+                                        Icons.edit,
+                                        color: Colors.indigo,
+                                        size: 20,
+                                      ),
                                       SizedBox(width: 8),
                                       Text('Edit Data'),
                                     ],
@@ -348,7 +431,11 @@ class _PetukangListScreenState extends State<PetukangListScreen> {
                                   value: 'hapus',
                                   child: Row(
                                     children: [
-                                      Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                                      Icon(
+                                        Icons.delete_outline,
+                                        color: Colors.red,
+                                        size: 20,
+                                      ),
                                       SizedBox(width: 8),
                                       Text('Hapus Petukang'),
                                     ],
@@ -379,7 +466,9 @@ class _PetukangListScreenState extends State<PetukangListScreen> {
       await _db.addPetukang(result);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Petukang "${result.nama}" berhasil ditambahkan')),
+          SnackBar(
+            content: Text('Petukang "${result.nama}" berhasil ditambahkan'),
+          ),
         );
       }
     }
@@ -427,11 +516,19 @@ class _PetukangListScreenState extends State<PetukangListScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Hapus Petukang?'),
-        content: Text('Apakah Anda yakin ingin menghapus data "${petukang.nama}"?'),
+        content: Text(
+          'Apakah Anda yakin ingin menghapus data "${petukang.nama}"?',
+        ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Batal')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Batal'),
+          ),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
             onPressed: () => Navigator.pop(context, true),
             child: const Text('Hapus'),
           ),

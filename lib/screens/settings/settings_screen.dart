@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../services/database_service.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -9,9 +10,7 @@ class SettingsScreen extends StatelessWidget {
     final db = DatabaseService();
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Pengaturan & Panduan Sistem'),
-      ),
+      appBar: AppBar(title: const Text('Pengaturan & Panduan Sistem')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Center(
@@ -26,7 +25,9 @@ class SettingsScreen extends StatelessWidget {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                     side: BorderSide(
-                      color: db.isFirebaseConnected ? Colors.green.shade300 : Colors.amber.shade300,
+                      color: db.isFirebaseConnected
+                          ? Colors.green.shade300
+                          : Colors.amber.shade300,
                     ),
                   ),
                   child: Padding(
@@ -37,8 +38,12 @@ class SettingsScreen extends StatelessWidget {
                         Row(
                           children: [
                             Icon(
-                              db.isFirebaseConnected ? Icons.cloud_done : Icons.cloud_off,
-                              color: db.isFirebaseConnected ? Colors.green : Colors.amber.shade800,
+                              db.isFirebaseConnected
+                                  ? Icons.cloud_done
+                                  : Icons.cloud_off,
+                              color: db.isFirebaseConnected
+                                  ? Colors.green
+                                  : Colors.amber.shade800,
                               size: 28,
                             ),
                             const SizedBox(width: 12),
@@ -50,14 +55,20 @@ class SettingsScreen extends StatelessWidget {
                                     db.isFirebaseConnected
                                         ? 'Database Terhubung ke Firebase Firestore'
                                         : 'Mode Database Lokal (Offline-First Ready)',
-                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                    ),
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
                                     db.isFirebaseConnected
                                         ? 'Data tersinkronisasi langsung ke Firebase Firestore Cloud.'
                                         : 'Aplikasi berjalan lancar tanpa error menggunakan Database Lokal & data demo petukang.',
-                                    style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                                    style: TextStyle(
+                                      color: Colors.grey.shade600,
+                                      fontSize: 12,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -67,7 +78,10 @@ class SettingsScreen extends StatelessWidget {
                         const Divider(height: 24),
                         const Text(
                           'Cara Mengaktifkan Firebase Firestore Anda:',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
                         ),
                         const SizedBox(height: 6),
                         Container(
@@ -83,7 +97,10 @@ class SettingsScreen extends StatelessWidget {
                             '   dart pub global activate flutterfire_cli\n'
                             '   flutterfire configure\n'
                             '4. File lib/services/firebase_options.dart akan terisi otomatis dengan kredensial project Anda.',
-                            style: TextStyle(fontFamily: 'monospace', fontSize: 12),
+                            style: TextStyle(
+                              fontFamily: 'monospace',
+                              fontSize: 12,
+                            ),
                           ),
                         ),
                       ],
@@ -95,7 +112,9 @@ class SettingsScreen extends StatelessWidget {
                 // Panduan Aturan Bisnis
                 Card(
                   elevation: 1,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   child: Padding(
                     padding: const EdgeInsets.all(16),
                     child: Column(
@@ -103,7 +122,10 @@ class SettingsScreen extends StatelessWidget {
                       children: [
                         const Text(
                           'Aturan & Panduan Penggunaan Fitur',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
                         ),
                         const SizedBox(height: 12),
                         _buildRuleTile(
@@ -122,7 +144,8 @@ class SettingsScreen extends StatelessWidget {
                           icon: Icons.calendar_month,
                           color: Colors.blue,
                           title: '3. Kalender Absensi 4 Warna',
-                          desc: '• Biru: Hari kerja yang belum dibayar upahnya\n'
+                          desc:
+                              '• Biru: Hari kerja yang belum dibayar upahnya\n'
                               '• Hijau: Hari kerja yang sudah lunas dibayar upahnya\n'
                               '• Amber: Tanggal pembayaran upah proyek\n'
                               '• Merah: Hari libur atau tidak masuk kerja',
@@ -164,7 +187,10 @@ class SettingsScreen extends StatelessWidget {
         children: [
           Container(
             padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(color: color.withOpacity(0.12), shape: BoxShape.circle),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.12),
+              shape: BoxShape.circle,
+            ),
             child: Icon(icon, color: color, size: 20),
           ),
           const SizedBox(width: 12),
@@ -172,9 +198,22 @@ class SettingsScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
                 const SizedBox(height: 3),
-                Text(desc, style: TextStyle(color: Colors.grey.shade700, fontSize: 12, height: 1.4)),
+                Text(
+                  desc,
+                  style: TextStyle(
+                    color: Colors.grey.shade700,
+                    fontSize: 12,
+                    height: 1.4,
+                  ),
+                ),
               ],
             ),
           ),

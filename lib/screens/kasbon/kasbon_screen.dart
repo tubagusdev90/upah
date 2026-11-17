@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+
 import '../../models/petukang.dart';
 import '../../models/kasbon.dart';
 import '../../services/database_service.dart';
 import '../../utils/currency_formatter.dart';
 import '../../utils/date_formatter.dart';
+import '../../utils/theme.dart';
 
 class KasbonScreen extends StatefulWidget {
   const KasbonScreen({super.key});
@@ -20,9 +22,7 @@ class _KasbonScreenState extends State<KasbonScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Manajemen Kasbon Petukang'),
-      ),
+      appBar: AppBar(title: const Text('Manajemen Kasbon Petukang')),
       floatingActionButton: FloatingActionButton.extended(
         backgroundColor: Colors.red.shade700,
         foregroundColor: Colors.white,
@@ -36,7 +36,10 @@ class _KasbonScreenState extends State<KasbonScreen> {
         builder: (context, petukangSnap) {
           final petukangList = petukangSnap.data ?? [];
           _currentPetukangList = petukangList;
-          final double totalKasbonSemua = petukangList.fold(0.0, (sum, p) => sum + p.sisaKasbon);
+          final double totalKasbonSemua = petukangList.fold(
+            0.0,
+            (sum, p) => sum + p.sisaKasbon,
+          );
 
           return Column(
             children: [
@@ -75,18 +78,28 @@ class _KasbonScreenState extends State<KasbonScreen> {
                           ),
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.white24,
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: const Row(
                             children: [
-                              Icon(Icons.info_outline, size: 14, color: Colors.white),
+                              Icon(
+                                Icons.info_outline,
+                                size: 14,
+                                color: Colors.white,
+                              ),
                               SizedBox(width: 4),
                               Text(
                                 'Boleh > Upah',
-                                style: TextStyle(color: Colors.white, fontSize: 11),
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                ),
                               ),
                             ],
                           ),
@@ -116,13 +129,19 @@ class _KasbonScreenState extends State<KasbonScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: Row(
                   children: [
-                    const Text('Filter Petukang:', style: TextStyle(fontWeight: FontWeight.w600)),
+                    const Text(
+                      'Filter Petukang:',
+                      style: TextStyle(fontWeight: FontWeight.w600),
+                    ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: DropdownButtonFormField<String?>(
                         value: _selectedPetukangFilter,
                         decoration: InputDecoration(
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 4,
+                          ),
                           filled: true,
                           fillColor: Colors.grey.shade100,
                           border: OutlineInputBorder(
@@ -133,12 +152,18 @@ class _KasbonScreenState extends State<KasbonScreen> {
                         items: [
                           const DropdownMenuItem(
                             value: null,
-                            child: Text('Semua Petukang'),
+                            child: Text(
+                              'Semua Petukang',
+                              style: TextStyle(fontSize: 14),
+                            ),
                           ),
                           ...petukangList.map((p) {
                             return DropdownMenuItem(
                               value: p.id,
-                              child: Text('${p.nama} (Sisa: ${CurrencyFormatter.format(p.sisaKasbon)})'),
+                              child: Text(
+                                '${p.nama} (Sisa: ${CurrencyFormatter.format(p.sisaKasbon)})',
+                                style: TextStyle(fontSize: 12),
+                              ),
                             );
                           }),
                         ],
@@ -165,11 +190,18 @@ class _KasbonScreenState extends State<KasbonScreen> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.money_off_csred, size: 56, color: Colors.grey.shade400),
+                            Icon(
+                              Icons.money_off_csred,
+                              size: 56,
+                              color: Colors.grey.shade400,
+                            ),
                             const SizedBox(height: 12),
                             Text(
                               'Belum ada riwayat kasbon',
-                              style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey.shade600,
+                              ),
                             ),
                           ],
                         ),
@@ -177,7 +209,11 @@ class _KasbonScreenState extends State<KasbonScreen> {
                     }
 
                     return ListView.builder(
-                      padding: const EdgeInsets.only(left: 16, right: 16, bottom: 80),
+                      padding: const EdgeInsets.only(
+                        left: 16,
+                        right: 16,
+                        bottom: 80,
+                      ),
                       itemCount: kasbonList.length,
                       itemBuilder: (context, index) {
                         final kasbon = kasbonList[index];
@@ -200,17 +236,25 @@ class _KasbonScreenState extends State<KasbonScreen> {
                             side: BorderSide(color: Colors.grey.shade200),
                           ),
                           child: ListTile(
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
                             leading: CircleAvatar(
                               backgroundColor: Colors.red.shade100,
-                              child: const Icon(Icons.arrow_downward, color: Colors.red),
+                              child: const Icon(
+                                Icons.arrow_downward,
+                                color: Colors.red,
+                              ),
                             ),
                             title: Row(
                               children: [
                                 Expanded(
                                   child: Text(
                                     petukang.nama,
-                                    style: const TextStyle(fontWeight: FontWeight.bold),
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
                                 ),
                                 Text(
@@ -228,31 +272,50 @@ class _KasbonScreenState extends State<KasbonScreen> {
                               children: [
                                 const SizedBox(height: 4),
                                 Text(
-                                  kasbon.keterangan.isNotEmpty ? kasbon.keterangan : 'Tanpa keterangan',
-                                  style: TextStyle(color: Colors.grey.shade800, fontSize: 13),
+                                  kasbon.keterangan.isNotEmpty
+                                      ? kasbon.keterangan
+                                      : 'Tanpa keterangan',
+                                  style: TextStyle(
+                                    color: Colors.grey.shade800,
+                                    fontSize: 13,
+                                  ),
                                 ),
                                 const SizedBox(height: 4),
                                 Row(
                                   children: [
-                                    Icon(Icons.calendar_today, size: 12, color: Colors.grey.shade600),
+                                    Icon(
+                                      Icons.calendar_today,
+                                      size: 12,
+                                      color: Colors.grey.shade600,
+                                    ),
                                     const SizedBox(width: 4),
                                     Text(
                                       DateFormatter.format(kasbon.tanggal),
-                                      style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        color: Colors.grey.shade600,
+                                      ),
                                     ),
                                     const Spacer(),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: Colors.red.shade50,
-                                        borderRadius: BorderRadius.circular(4),
-                                      ),
-                                      child: Text(
-                                        'Sisa Kasbon Petukang: ${CurrencyFormatter.format(petukang.sisaKasbon)}',
-                                        style: TextStyle(fontSize: 11, color: Colors.red.shade900),
-                                      ),
-                                    ),
                                   ],
+                                ),
+                                SizedBox(height: 4),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.red.shade50,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    'Sisa Kasbon Petukang: ${CurrencyFormatter.format(petukang.sisaKasbon)}',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: Colors.red.shade900,
+                                    ),
+                                  ),
                                 ),
                               ],
                             ),
@@ -273,7 +336,9 @@ class _KasbonScreenState extends State<KasbonScreen> {
   void _openAddKasbonDialog([List<Petukang>? list]) async {
     List<Petukang> petukangList = (list != null && list.isNotEmpty)
         ? list
-        : (_currentPetukangList.isNotEmpty ? _currentPetukangList : _db.currentPetukangList);
+        : (_currentPetukangList.isNotEmpty
+              ? _currentPetukangList
+              : _db.currentPetukangList);
 
     if (petukangList.isEmpty) {
       petukangList = await _db.fetchPetukangList();
@@ -282,7 +347,9 @@ class _KasbonScreenState extends State<KasbonScreen> {
     if (petukangList.isEmpty) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Silakan tambahkan data petukang terlebih dahulu.')),
+          const SnackBar(
+            content: Text('Silakan tambahkan data petukang terlebih dahulu.'),
+          ),
         );
       }
       return;
@@ -290,7 +357,8 @@ class _KasbonScreenState extends State<KasbonScreen> {
 
     if (!mounted) return;
 
-    String selectedPetukangId = (_selectedPetukangFilter != null &&
+    String selectedPetukangId =
+        (_selectedPetukangFilter != null &&
             petukangList.any((p) => p.id == _selectedPetukangFilter))
         ? _selectedPetukangFilter!
         : petukangList.first.id;
@@ -303,7 +371,9 @@ class _KasbonScreenState extends State<KasbonScreen> {
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
-            final currentSelected = petukangList.firstWhere((p) => p.id == selectedPetukangId);
+            final currentSelected = petukangList.firstWhere(
+              (p) => p.id == selectedPetukangId,
+            );
 
             return AlertDialog(
               title: Row(
@@ -331,7 +401,10 @@ class _KasbonScreenState extends State<KasbonScreen> {
                         items: petukangList.map((p) {
                           return DropdownMenuItem(
                             value: p.id,
-                            child: Text('${p.nama} (${p.role.label})',style: TextStyle(fontSize: 12)),
+                            child: Text(
+                              '${p.nama} (${p.role.label})',
+                              style: TextStyle(fontSize: 12),
+                            ),
                           );
                         }).toList(),
                         onChanged: (val) {
@@ -355,8 +428,13 @@ class _KasbonScreenState extends State<KasbonScreen> {
                           children: [
                             const Text('Sisa Kasbon Saat Ini:'),
                             Text(
-                              CurrencyFormatter.format(currentSelected.sisaKasbon),
-                              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.red),
+                              CurrencyFormatter.format(
+                                currentSelected.sisaKasbon,
+                              ),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: Colors.red,
+                              ),
                             ),
                           ],
                         ),
@@ -367,6 +445,7 @@ class _KasbonScreenState extends State<KasbonScreen> {
                       TextFormField(
                         controller: jumlahController,
                         keyboardType: TextInputType.number,
+                        inputFormatters: [CurrencyInputFormatter()],
                         decoration: const InputDecoration(
                           labelText: 'Jumlah Kasbon (Rp) *',
                           prefixIcon: Icon(Icons.attach_money),
@@ -426,10 +505,14 @@ class _KasbonScreenState extends State<KasbonScreen> {
                     foregroundColor: Colors.white,
                   ),
                   onPressed: () {
-                    final amount = CurrencyFormatter.parse(jumlahController.text);
+                    final amount = CurrencyFormatter.parse(
+                      jumlahController.text,
+                    );
                     if (amount <= 0) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Jumlah kasbon harus lebih dari 0')),
+                        const SnackBar(
+                          content: Text('Jumlah kasbon harus lebih dari 0'),
+                        ),
                       );
                       return;
                     }
@@ -457,7 +540,9 @@ class _KasbonScreenState extends State<KasbonScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             backgroundColor: Colors.red.shade800,
-            content: Text('Kasbon senilai ${CurrencyFormatter.format(amount)} berhasil dicatat.'),
+            content: Text(
+              'Kasbon senilai ${CurrencyFormatter.format(amount)} berhasil dicatat.',
+            ),
           ),
         );
       }

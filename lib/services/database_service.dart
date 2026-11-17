@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
@@ -32,7 +33,8 @@ class DatabaseService {
   final _petukangController = StreamController<List<Petukang>>.broadcast();
   final _absensiController = StreamController<List<Absensi>>.broadcast();
   final _kasbonController = StreamController<List<Kasbon>>.broadcast();
-  final _pembayaranController = StreamController<List<PembayaranUpah>>.broadcast();
+  final _pembayaranController =
+      StreamController<List<PembayaranUpah>>.broadcast();
 
   Future<void> initialize() async {
     try {
@@ -45,25 +47,35 @@ class DatabaseService {
       // Sync Firestore collections into local memory cache
       _firestore!.collection('petukang').snapshots().listen((snapshot) {
         _localPetukang.clear();
-        _localPetukang.addAll(snapshot.docs.map((doc) => Petukang.fromMap(doc.data(), doc.id)));
+        _localPetukang.addAll(
+          snapshot.docs.map((doc) => Petukang.fromMap(doc.data(), doc.id)),
+        );
         _petukangController.add(List.unmodifiable(_localPetukang));
       }, onError: (e) => debugPrint("Error syncing petukang: $e"));
 
       _firestore!.collection('absensi').snapshots().listen((snapshot) {
         _localAbsensi.clear();
-        _localAbsensi.addAll(snapshot.docs.map((doc) => Absensi.fromMap(doc.data(), doc.id)));
+        _localAbsensi.addAll(
+          snapshot.docs.map((doc) => Absensi.fromMap(doc.data(), doc.id)),
+        );
         _absensiController.add(List.unmodifiable(_localAbsensi));
       }, onError: (e) => debugPrint("Error syncing absensi: $e"));
 
       _firestore!.collection('kasbon').snapshots().listen((snapshot) {
         _localKasbon.clear();
-        _localKasbon.addAll(snapshot.docs.map((doc) => Kasbon.fromMap(doc.data(), doc.id)));
+        _localKasbon.addAll(
+          snapshot.docs.map((doc) => Kasbon.fromMap(doc.data(), doc.id)),
+        );
         _kasbonController.add(List.unmodifiable(_localKasbon));
       }, onError: (e) => debugPrint("Error syncing kasbon: $e"));
 
       _firestore!.collection('pembayaran_upah').snapshots().listen((snapshot) {
         _localPembayaran.clear();
-        _localPembayaran.addAll(snapshot.docs.map((doc) => PembayaranUpah.fromMap(doc.data(), doc.id)));
+        _localPembayaran.addAll(
+          snapshot.docs.map(
+            (doc) => PembayaranUpah.fromMap(doc.data(), doc.id),
+          ),
+        );
         _pembayaranController.add(List.unmodifiable(_localPembayaran));
       }, onError: (e) => debugPrint("Error syncing pembayaran: $e"));
 
@@ -72,11 +84,15 @@ class DatabaseService {
         final snap = await _firestore!.collection('petukang').get();
         if (snap.docs.isNotEmpty) {
           _localPetukang.clear();
-          _localPetukang.addAll(snap.docs.map((doc) => Petukang.fromMap(doc.data(), doc.id)));
+          _localPetukang.addAll(
+            snap.docs.map((doc) => Petukang.fromMap(doc.data(), doc.id)),
+          );
         }
       } catch (_) {}
     } catch (e) {
-      debugPrint("Firebase init failed or skipped: $e. Falling back to local storage.");
+      debugPrint(
+        "Firebase init failed or skipped: $e. Falling back to local storage.",
+      );
       _isFirebaseInitialized = false;
       _seedMockData();
     }
@@ -96,10 +112,9 @@ class DatabaseService {
         nama: 'Pak Slamet',
         role: WorkerRole.kepalaTukang,
         nomorWa: '081234567890',
-        fotoUrl: 'https://images.unsplash.com/photo-1541888946425-d0fbb1861593?w=150',
         tanggalJoin: DateTime(now.year, now.month, 1),
-        upahHarian: 180000.0,
-        sisaKasbon: 350000.0,
+        upahHarian: 180000,
+        sisaKasbon: 350000,
         tanggalBayarTerakhir: DateTime(now.year, now.month, 3),
       ),
       Petukang(
@@ -107,333 +122,89 @@ class DatabaseService {
         nama: 'Mas Budi Hartono',
         role: WorkerRole.petukang,
         nomorWa: '082198765432',
-        fotoUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150',
         tanggalJoin: DateTime(now.year, now.month, 1),
-        upahHarian: 140000.0,
-        sisaKasbon: 100000.0,
-        tanggalBayarTerakhir: null,
+        upahHarian: 140000,
+        sisaKasbon: 100000,
       ),
       Petukang(
         id: p3Id,
         nama: 'Kang Asep Wahyudi',
         role: WorkerRole.kenek,
         nomorWa: '085712344321',
-        fotoUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150',
         tanggalJoin: DateTime(now.year, now.month, 1),
-        upahHarian: 100000.0,
-        sisaKasbon: 250000.0,
-        tanggalBayarTerakhir: null,
+        upahHarian: 100000,
+        sisaKasbon: 250000,
       ),
     ]);
 
-    // Seed Kasbon
     _localKasbon.addAll([
       Kasbon(
-        id: 'efd27303-f787-4367-9e1f-ec935605e205',
-        nama: 'Ujang',
-        role: WorkerRole.petukang,
-        nomorWa: '',
-        fotoUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150',
-        tanggalJoin: DateTime.now().subtract(const Duration(days: 180)),
-        upahHarian: 150000.0, // upah naik dari 120.000 sejak 3 Nov 2026
-        sisaKasbon: 0.0,
-        tanggalBayarTerakhir: null,
-        tanggalKenaikanUpah: DateTime(2026, 11, 3),
-        isAktif: true,
-,
+        id: _uuid.v4(),
         petukangId: p1Id,
-        tanggal: DateTime(now.year, now.month, 2),
-        jumlah: 350000.0,
-        keterangan: 'Keperluan beli beras keluarga',
-        sisa: 350000.0,
-        createdAt: DateTime.now(),
+        tanggal: DateTime(now.year, now.month, 5),
+        jumlah: 350000,
+        keterangan: 'Kasbon kebutuhan pribadi',
+        sisa: 350000,
+        createdAt: now,
       ),
       Kasbon(
-        id: 'efd27303-f787-4367-9e1f-ec935605e205',
-        nama: 'Ujang',
-        role: WorkerRole.petukang,
-        nomorWa: '',
-        fotoUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150',
-        tanggalJoin: DateTime.now().subtract(const Duration(days: 180)),
-        upahHarian: 150000.0, // upah naik dari 120.000 sejak 3 Nov 2026
-        sisaKasbon: 0.0,
-        tanggalBayarTerakhir: null,
-        tanggalKenaikanUpah: DateTime(2026, 11, 3),
-        isAktif: true,
-,
+        id: _uuid.v4(),
         petukangId: p2Id,
         tanggal: DateTime(now.year, now.month, 4),
-        jumlah: 100000.0,
-        keterangan: 'Bensin motor & pulsa',
-        sisa: 100000.0,
-        createdAt: DateTime.now(),
+        jumlah: 100000,
+        keterangan: 'Kasbon kebutuhan keluarga',
+        sisa: 100000,
+        createdAt: now,
       ),
       Kasbon(
-        id: 'efd27303-f787-4367-9e1f-ec935605e205',
-        nama: 'Ujang',
-        role: WorkerRole.petukang,
-        nomorWa: '',
-        fotoUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150',
-        tanggalJoin: DateTime.now().subtract(const Duration(days: 180)),
-        upahHarian: 150000.0, // upah naik dari 120.000 sejak 3 Nov 2026
-        sisaKasbon: 0.0,
-        tanggalBayarTerakhir: null,
-        tanggalKenaikanUpah: DateTime(2026, 11, 3),
-        isAktif: true,
-,
+        id: _uuid.v4(),
         petukangId: p3Id,
         tanggal: DateTime(now.year, now.month, 5),
-        jumlah: 250000.0,
-        keterangan: 'Beli obat anak sakit',
-        sisa: 250000.0,
-        createdAt: DateTime.now(),
+        jumlah: 250000,
+        keterangan: 'Kasbon kebutuhan pribadi',
+        sisa: 250000,
+        createdAt: now,
       ),
     ]);
 
-    // Seed Absensi for current month
-    // P1: Hari 1-2 hijau (sudah bayar), hari 3 amber (tgl bayar), hari 4-6 biru (belum bayar), hari 7 merah (libur), hari 8-9 biru
-    _localAbsensi.addAll([
-      // Absensi(
-        id: 'efd27303-f787-4367-9e1f-ec935605e205',
-        nama: 'Ujang',
-        role: WorkerRole.petukang,
-        nomorWa: '',
-        fotoUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150',
-        tanggalJoin: DateTime.now().subtract(const Duration(days: 180)),
-        upahHarian: 150000.0, // upah naik dari 120.000 sejak 3 Nov 2026
-        sisaKasbon: 0.0,
-        tanggalBayarTerakhir: null,
-        tanggalKenaikanUpah: DateTime(2026, 11, 3),
-        isAktif: true,
-,
-        petukangId: p1Id,
-        tanggal: DateTime(now.year, now.month, 1),
-        status: AbsenStatus.kerjaSudahBayar,
-        upahHarian: 180000.0,
-      ),
-      // Absensi(
-        id: 'efd27303-f787-4367-9e1f-ec935605e205',
-        nama: 'Ujang',
-        role: WorkerRole.petukang,
-        nomorWa: '',
-        fotoUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150',
-        tanggalJoin: DateTime.now().subtract(const Duration(days: 180)),
-        upahHarian: 150000.0, // upah naik dari 120.000 sejak 3 Nov 2026
-        sisaKasbon: 0.0,
-        tanggalBayarTerakhir: null,
-        tanggalKenaikanUpah: DateTime(2026, 11, 3),
-        isAktif: true,
-,
-        petukangId: p1Id,
-        tanggal: DateTime(now.year, now.month, 2),
-        status: AbsenStatus.kerjaSudahBayar,
-        upahHarian: 180000.0,
-      ),
-      // Absensi(
-        id: 'efd27303-f787-4367-9e1f-ec935605e205',
-        nama: 'Ujang',
-        role: WorkerRole.petukang,
-        nomorWa: '',
-        fotoUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150',
-        tanggalJoin: DateTime.now().subtract(const Duration(days: 180)),
-        upahHarian: 150000.0, // upah naik dari 120.000 sejak 3 Nov 2026
-        sisaKasbon: 0.0,
-        tanggalBayarTerakhir: null,
-        tanggalKenaikanUpah: DateTime(2026, 11, 3),
-        isAktif: true,
-,
-        petukangId: p1Id,
-        tanggal: DateTime(now.year, now.month, 3),
-        status: AbsenStatus.tanggalBayarUpah,
-        upahHarian: 180000.0,
-        keterangan: 'Hari Pembayaran Upah Periode 1',
-      ),
-      // Absensi(
-        id: 'efd27303-f787-4367-9e1f-ec935605e205',
-        nama: 'Ujang',
-        role: WorkerRole.petukang,
-        nomorWa: '',
-        fotoUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150',
-        tanggalJoin: DateTime.now().subtract(const Duration(days: 180)),
-        upahHarian: 150000.0, // upah naik dari 120.000 sejak 3 Nov 2026
-        sisaKasbon: 0.0,
-        tanggalBayarTerakhir: null,
-        tanggalKenaikanUpah: DateTime(2026, 11, 3),
-        isAktif: true,
-,
-        petukangId: p1Id,
-        tanggal: DateTime(now.year, now.month, 4),
-        status: AbsenStatus.kerjaBelumBayar,
-        upahHarian: 180000.0,
-      ),
-      // Absensi(
-        id: 'efd27303-f787-4367-9e1f-ec935605e205',
-        nama: 'Ujang',
-        role: WorkerRole.petukang,
-        nomorWa: '',
-        fotoUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150',
-        tanggalJoin: DateTime.now().subtract(const Duration(days: 180)),
-        upahHarian: 150000.0, // upah naik dari 120.000 sejak 3 Nov 2026
-        sisaKasbon: 0.0,
-        tanggalBayarTerakhir: null,
-        tanggalKenaikanUpah: DateTime(2026, 11, 3),
-        isAktif: true,
-,
-        petukangId: p1Id,
-        tanggal: DateTime(now.year, now.month, 5),
-        status: AbsenStatus.kerjaBelumBayar,
-        upahHarian: 180000.0,
-      ),
-      // Absensi(
-        id: 'efd27303-f787-4367-9e1f-ec935605e205',
-        nama: 'Ujang',
-        role: WorkerRole.petukang,
-        nomorWa: '',
-        fotoUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150',
-        tanggalJoin: DateTime.now().subtract(const Duration(days: 180)),
-        upahHarian: 150000.0, // upah naik dari 120.000 sejak 3 Nov 2026
-        sisaKasbon: 0.0,
-        tanggalBayarTerakhir: null,
-        tanggalKenaikanUpah: DateTime(2026, 11, 3),
-        isAktif: true,
-,
-        petukangId: p1Id,
-        tanggal: DateTime(now.year, now.month, 6),
-        status: AbsenStatus.kerjaBelumBayar,
-        upahHarian: 180000.0,
-      ),
-      // Absensi(
-        id: 'efd27303-f787-4367-9e1f-ec935605e205',
-        nama: 'Ujang',
-        role: WorkerRole.petukang,
-        nomorWa: '',
-        fotoUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150',
-        tanggalJoin: DateTime.now().subtract(const Duration(days: 180)),
-        upahHarian: 150000.0, // upah naik dari 120.000 sejak 3 Nov 2026
-        sisaKasbon: 0.0,
-        tanggalBayarTerakhir: null,
-        tanggalKenaikanUpah: DateTime(2026, 11, 3),
-        isAktif: true,
-,
-        petukangId: p1Id,
-        tanggal: DateTime(now.year, now.month, 7),
-        status: AbsenStatus.libur,
-        upahHarian: 0.0,
-        keterangan: 'Hari Minggu Libur',
-      ),
-      // Absensi(
-        id: 'efd27303-f787-4367-9e1f-ec935605e205',
-        nama: 'Ujang',
-        role: WorkerRole.petukang,
-        nomorWa: '',
-        fotoUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150',
-        tanggalJoin: DateTime.now().subtract(const Duration(days: 180)),
-        upahHarian: 150000.0, // upah naik dari 120.000 sejak 3 Nov 2026
-        sisaKasbon: 0.0,
-        tanggalBayarTerakhir: null,
-        tanggalKenaikanUpah: DateTime(2026, 11, 3),
-        isAktif: true,
-,
-        petukangId: p1Id,
-        tanggal: DateTime(now.year, now.month, 8),
-        status: AbsenStatus.kerjaBelumBayar,
-        upahHarian: 180000.0,
-      ),
-      // Absensi(
-        id: 'efd27303-f787-4367-9e1f-ec935605e205',
-        nama: 'Ujang',
-        role: WorkerRole.petukang,
-        nomorWa: '',
-        fotoUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150',
-        tanggalJoin: DateTime.now().subtract(const Duration(days: 180)),
-        upahHarian: 150000.0, // upah naik dari 120.000 sejak 3 Nov 2026
-        sisaKasbon: 0.0,
-        tanggalBayarTerakhir: null,
-        tanggalKenaikanUpah: DateTime(2026, 11, 3),
-        isAktif: true,
-,
-        petukangId: p1Id,
-        tanggal: DateTime(now.year, now.month, 9),
-        status: AbsenStatus.kerjaBelumBayar,
-        upahHarian: 180000.0,
-      ),
-    ]);
-
-    // Seed P2 Absensi
-    // ... existing P2 absensi code remains unchanged
-    // Add new Petukang Ujang with upah increase
-    _localPetukang.add(
-      Petukang(
-        id: 'efd27303-f787-4367-9e1f-ec935605e205',
-        nama: 'Ujang',
-        role: WorkerRole.petukang,
-        nomorWa: '',
-        fotoUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150',
-        tanggalJoin: DateTime.now().subtract(const Duration(days: 180)),
-        upahHarian: 150000.0, // upah naik dari 120.000 sejak 3 Nov 2026
-        sisaKasbon: 0.0,
-        tanggalBayarTerakhir: null,
-        tanggalKenaikanUpah: DateTime(2026, 11, 3),
-        isAktif: true,
-,
-        nama: 'Ujang',
-        role: WorkerRole.petukang,
-        nomorWa: '',
-        fotoUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150',
-        tanggalJoin: DateTime.now().subtract(const Duration(days: 180)),
-        upahHarian: 150000.0, // upah naik dari 120.000 sejak 3 Nov 2026
-        sisaKasbon: 0.0,
-        tanggalBayarTerakhir: null,
-        tanggalKenaikanUpah: DateTime(2026, 11, 3),
-
-        upahHarian: 150000.0, // upah naik dari 120.000 sejak 3 Nov 2026
-        sisaKasbon: 0.0,
-        tanggalBayarTerakhir: null,
-      ),
-    );
-    // Note: sebelumnya upah 120.000, diubah menjadi 150.000 efektif 3 Nov 2026.
-
-    for (int day = 1; day <= 8; day++) {
-      if (day == 7) {
-        _localAbsensi.add(// Removed invalid Absensi entries for Ujang (incorrect positional arguments) that caused compile errors.
-        nama: 'Ujang',
-        role: WorkerRole.petukang,
-        nomorWa: '',
-        fotoUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150',
-        tanggalJoin: DateTime.now().subtract(const Duration(days: 180)),
-        upahHarian: 150000.0, // upah naik dari 120.000 sejak 3 Nov 2026
-        sisaKasbon: 0.0,
-        tanggalBayarTerakhir: null,
-        tanggalKenaikanUpah: DateTime(2026, 11, 3),
-        isAktif: true,
-,
-          petukangId: p2Id,
-          tanggal: DateTime(now.year, now.month, day),
-          status: AbsenStatus.libur,
-          upahHarian: 0,
-        ));
-      } else {
-        _localAbsensi.add(// Removed invalid Absensi entries for Ujang (incorrect positional arguments) that caused compile errors.
-        nama: 'Ujang',
-        role: WorkerRole.petukang,
-        nomorWa: '',
-        fotoUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150',
-        tanggalJoin: DateTime.now().subtract(const Duration(days: 180)),
-        upahHarian: 150000.0, // upah naik dari 120.000 sejak 3 Nov 2026
-        sisaKasbon: 0.0,
-        tanggalBayarTerakhir: null,
-        tanggalKenaikanUpah: DateTime(2026, 11, 3),
-        isAktif: true,
-,
-          petukangId: p2Id,
-          tanggal: DateTime(now.year, now.month, day),
-          status: AbsenStatus.kerjaBelumBayar,
-          upahHarian: 140000.0,
-        ));
+    // Data contoh absensi untuk bulan berjalan.
+    for (final worker in _localPetukang) {
+      final daysToSeed = now.day < 9 ? now.day : 9;
+      for (int day = 1; day <= daysToSeed; day++) {
+        final date = DateTime(now.year, now.month, day);
+        final status = day == 3
+            ? AbsenStatus.tanggalBayarUpah
+            : day <= 2
+            ? AbsenStatus.kerjaSudahBayar
+            : AbsenStatus.kerjaBelumBayar;
+        _localAbsensi.add(
+          Absensi(
+            id: '${worker.id}_${DateFormatter.dateKey(date)}',
+            petukangId: worker.id,
+            tanggal: date,
+            status: status,
+            upahHarian: status == AbsenStatus.libur ? 0 : worker.upahHarian,
+            keterangan: status == AbsenStatus.tanggalBayarUpah
+                ? 'Pembayaran upah'
+                : null,
+          ),
+        );
       }
     }
 
     _notifyAll();
+  }
+
+  Stream<T> _streamWithInitial<T>(T initialValue, Stream<T> source) {
+    return Stream<T>.multi((controller) {
+      controller.add(initialValue);
+      final subscription = source.listen(
+        controller.add,
+        onError: controller.addError,
+        onDone: controller.close,
+      );
+      controller.onCancel = subscription.cancel;
+    });
   }
 
   void _notifyAll() {
@@ -447,35 +218,34 @@ class DatabaseService {
 
   Stream<List<Petukang>> getPetukangList() {
     if (isFirebaseConnected) {
-      return _firestore!
-          .collection('petukang')
-          .snapshots()
-          .map((snapshot) {
-            final list = snapshot.docs.map((doc) => Petukang.fromMap(doc.data(), doc.id)).toList();
-            _localPetukang.clear();
-            _localPetukang.addAll(list);
-            return list;
-          });
+      return _firestore!.collection('petukang').snapshots().map((snapshot) {
+        final list = snapshot.docs
+            .map((doc) => Petukang.fromMap(doc.data(), doc.id))
+            .toList();
+        _localPetukang.clear();
+        _localPetukang.addAll(list);
+        return list;
+      });
     }
-    // Return stream seeded with current data
-    return _petukangController.stream.transform(
-      StreamTransformer<List<Petukang>, List<Petukang>>.fromHandlers(
-        handleData: (data, sink) => sink.add(data),
-      ),
-    )..listen(null, onDone: () {});
+    return _streamWithInitial(
+      List<Petukang>.unmodifiable(_localPetukang),
+      _petukangController.stream,
+    );
   }
 
   // Getters for current in-memory data
   List<Petukang> get currentPetukangList => List.unmodifiable(_localPetukang);
   List<Kasbon> get currentKasbonList => List.unmodifiable(_localKasbon);
-  List<PembayaranUpah> get currentPembayaranList => List.unmodifiable(_localPembayaran);
- List.unmodifiable(_localPetukang);
+  List<PembayaranUpah> get currentPembayaranList =>
+      List.unmodifiable(_localPembayaran);
 
   Future<List<Petukang>> fetchPetukangList() async {
     if (isFirebaseConnected) {
       try {
         final snap = await _firestore!.collection('petukang').get();
-        final list = snap.docs.map((doc) => Petukang.fromMap(doc.data(), doc.id)).toList();
+        final list = snap.docs
+            .map((doc) => Petukang.fromMap(doc.data(), doc.id))
+            .toList();
         _localPetukang.clear();
         _localPetukang.addAll(list);
         return list;
@@ -500,7 +270,10 @@ class DatabaseService {
 
   Future<void> updatePetukang(Petukang petukang) async {
     if (isFirebaseConnected) {
-      await _firestore!.collection('petukang').doc(petukang.id).update(petukang.toMap());
+      await _firestore!
+          .collection('petukang')
+          .doc(petukang.id)
+          .update(petukang.toMap());
     } else {
       final index = _localPetukang.indexWhere((item) => item.id == petukang.id);
       if (index != -1) {
@@ -510,9 +283,16 @@ class DatabaseService {
     }
   }
 
-  Future<void> updateUpahHarian(String petukangId, double upahBaru, {String? alasan}) async {
+  Future<void> updateUpahHarian(
+    String petukangId,
+    double upahBaru, {
+    String? alasan,
+  }) async {
     if (isFirebaseConnected) {
-      await _firestore!.collection('petukang').doc(petukangId).update({'upahHarian': upahBaru});
+      await _firestore!.collection('petukang').doc(petukangId).update({
+        'upahHarian': upahBaru,
+        'tanggalKenaikanUpah': DateTime.now().toIso8601String(),
+      });
       await _firestore!.collection('upah_history').add({
         'petukangId': petukangId,
         'upahBaru': upahBaru,
@@ -522,7 +302,10 @@ class DatabaseService {
     } else {
       final index = _localPetukang.indexWhere((p) => p.id == petukangId);
       if (index != -1) {
-        _localPetukang[index] = _localPetukang[index].copyWith(upahHarian: upahBaru);
+        _localPetukang[index] = _localPetukang[index].copyWith(
+          upahHarian: upahBaru,
+          tanggalKenaikanUpah: DateTime.now(),
+        );
         _notifyAll();
       }
     }
@@ -548,9 +331,18 @@ class DatabaseService {
           .collection('absensi')
           .where('petukangId', isEqualTo: petukangId)
           .snapshots()
-          .map((snapshot) => snapshot.docs.map((doc) => Absensi.fromMap(doc.data(), doc.id)).toList());
+          .map(
+            (snapshot) => snapshot.docs
+                .map((doc) => Absensi.fromMap(doc.data(), doc.id))
+                .toList(),
+          );
     }
-    return _absensiController.stream.map((list) => list.where((a) => a.petukangId == petukangId).toList());
+    return _streamWithInitial(
+      _localAbsensi.where((a) => a.petukangId == petukangId).toList(),
+      _absensiController.stream.map(
+        (list) => list.where((a) => a.petukangId == petukangId).toList(),
+      ),
+    );
   }
 
   List<Absensi> getAbsensiSync(String petukangId) {
@@ -567,7 +359,7 @@ class DatabaseService {
     final normDate = DateFormatter.normalize(date);
     final docId = '${petukangId}_${DateFormatter.dateKey(normDate)}';
 
-    final abs = // Absensi(
+    final abs = Absensi(
       id: docId,
       petukangId: petukangId,
       tanggal: normDate,
@@ -579,11 +371,13 @@ class DatabaseService {
     if (isFirebaseConnected) {
       await _firestore!.collection('absensi').doc(docId).set(abs.toMap());
     } else {
-      final index = _localAbsensi.indexWhere((a) =>
-          a.petukangId == petukangId &&
-          a.tanggal.year == normDate.year &&
-          a.tanggal.month == normDate.month &&
-          a.tanggal.day == normDate.day);
+      final index = _localAbsensi.indexWhere(
+        (a) =>
+            a.petukangId == petukangId &&
+            a.tanggal.year == normDate.year &&
+            a.tanggal.month == normDate.month &&
+            a.tanggal.day == normDate.day,
+      );
 
       if (index != -1) {
         _localAbsensi[index] = abs;
@@ -598,23 +392,35 @@ class DatabaseService {
 
   Stream<List<Kasbon>> getKasbonList(String? petukangId) {
     if (isFirebaseConnected) {
-      var query = _firestore!.collection('kasbon').orderBy('tanggal', descending: true);
+      var query = _firestore!
+          .collection('kasbon')
+          .orderBy('tanggal', descending: true);
       if (petukangId != null && petukangId.isNotEmpty) {
         return _firestore!
             .collection('kasbon')
             .where('petukangId', isEqualTo: petukangId)
             .snapshots()
-            .map((snap) => snap.docs.map((d) => Kasbon.fromMap(d.data(), d.id)).toList());
+            .map(
+              (snap) =>
+                  snap.docs.map((d) => Kasbon.fromMap(d.data(), d.id)).toList(),
+            );
       }
-      return query.snapshots().map((snap) => snap.docs.map((d) => Kasbon.fromMap(d.data(), d.id)).toList());
+      return query.snapshots().map(
+        (snap) => snap.docs.map((d) => Kasbon.fromMap(d.data(), d.id)).toList(),
+      );
     }
 
-    return _kasbonController.stream.map((list) {
+    List<Kasbon> filter(List<Kasbon> list) {
       if (petukangId != null && petukangId.isNotEmpty) {
         return list.where((k) => k.petukangId == petukangId).toList();
       }
       return list;
-    });
+    }
+
+    return _streamWithInitial(
+      filter(_localKasbon),
+      _kasbonController.stream.map(filter),
+    );
   }
 
   Future<void> addKasbon({
@@ -645,7 +451,9 @@ class DatabaseService {
       final pIndex = _localPetukang.indexWhere((p) => p.id == petukangId);
       if (pIndex != -1) {
         final currentP = _localPetukang[pIndex];
-        _localPetukang[pIndex] = currentP.copyWith(sisaKasbon: currentP.sisaKasbon + jumlah);
+        _localPetukang[pIndex] = currentP.copyWith(
+          sisaKasbon: currentP.sisaKasbon + jumlah,
+        );
       }
       _notifyAll();
     }
@@ -655,23 +463,37 @@ class DatabaseService {
 
   Stream<List<PembayaranUpah>> getPembayaranList({String? petukangId}) {
     if (isFirebaseConnected) {
-      var query = _firestore!.collection('pembayaran_upah').orderBy('createdAt', descending: true);
+      var query = _firestore!
+          .collection('pembayaran_upah')
+          .orderBy('createdAt', descending: true);
       if (petukangId != null && petukangId.isNotEmpty) {
         return _firestore!
             .collection('pembayaran_upah')
             .where('petukangId', isEqualTo: petukangId)
             .snapshots()
-            .map((s) => s.docs.map((d) => PembayaranUpah.fromMap(d.data(), d.id)).toList());
+            .map(
+              (s) => s.docs
+                  .map((d) => PembayaranUpah.fromMap(d.data(), d.id))
+                  .toList(),
+            );
       }
-      return query.snapshots().map((s) => s.docs.map((d) => PembayaranUpah.fromMap(d.data(), d.id)).toList());
+      return query.snapshots().map(
+        (s) =>
+            s.docs.map((d) => PembayaranUpah.fromMap(d.data(), d.id)).toList(),
+      );
     }
 
-    return _pembayaranController.stream.map((list) {
+    List<PembayaranUpah> filter(List<PembayaranUpah> list) {
       if (petukangId != null && petukangId.isNotEmpty) {
         return list.where((p) => p.petukangId == petukangId).toList();
       }
       return list;
-    });
+    }
+
+    return _streamWithInitial(
+      filter(_localPembayaran),
+      _pembayaranController.stream.map(filter),
+    );
   }
 
   /// Menghitung periode pembayaran upah:
@@ -679,23 +501,41 @@ class DatabaseService {
   /// sampai tanggal pembayaran saat ini.
   DateTime hitungPeriodeAwal(Petukang petukang) {
     if (petukang.tanggalBayarTerakhir != null) {
-      return DateFormatter.normalize(petukang.tanggalBayarTerakhir!.add(const Duration(days: 1)));
+      return DateFormatter.normalize(
+        petukang.tanggalBayarTerakhir!.add(const Duration(days: 1)),
+      );
     }
     return DateFormatter.normalize(petukang.tanggalJoin);
   }
 
   /// Menghitung hari kerja yang belum dibayar (status kerjaBelumBayar / biru) dalam periode tersebut
-  List<Absensi> getUnpaidWorkDays(String petukangId, DateTime start, DateTime end) {
-    final normStart = DateFormatter.normalize(start);
-    final normEnd = DateFormatter.normalize(end);
+  
+List<Absensi> getUnpaidWorkDays(
+  String petukangId,
+  DateTime start,
+  DateTime end,
+) {
+  final normStart = DateFormatter.normalize(start);
+  final normEnd = DateFormatter.normalize(end);
 
-    return _localAbsensi.where((a) {
-      if (a.petukangId != petukangId) return false;
-      final aDate = DateFormatter.normalize(a.tanggal);
-      final inPeriod = !aDate.isBefore(normStart) && !aDate.isAfter(normEnd);
-      return inPeriod && a.status == AbsenStatus.kerjaBelumBayar;
-    }).toList();
-  }
+  final result = _localAbsensi.where((a) {
+    if (a.petukangId != petukangId) return false;
+
+    final aDate = DateFormatter.normalize(a.tanggal);
+    final inPeriod =
+        !aDate.isBefore(normStart) && !aDate.isAfter(normEnd);
+
+    // Hanya hari Masuk yang belum dibayar.
+    // Status Libur dan tanggal pembayaran tidak dihitung.
+    return inPeriod &&
+        a.status == AbsenStatus.kerjaBelumBayar;
+  }).toList();
+
+  result.sort((a, b) => a.tanggal.compareTo(b.tanggal));
+
+  return result;
+}
+
 
   /// Memproses pembayaran upah:
   /// - Catat slip pembayaran upah
@@ -715,7 +555,23 @@ class DatabaseService {
     required String keterangan,
   }) async {
     final sisaKasbonSebelumnya = petukang.sisaKasbon;
-    final sisaKasbonSetelahnya = (sisaKasbonSebelumnya - potonganKasbon).clamp(0.0, double.infinity);
+    if (potonganKasbon < 0 ||
+        potonganKasbon > sisaKasbonSebelumnya ||
+        potonganKasbon > totalUpahKotor) {
+      throw ArgumentError(
+        'Potongan kasbon tidak boleh melebihi sisa kasbon atau total upah kotor.',
+      );
+    }
+    if (periodeAkhir.isBefore(periodeAwal) ||
+        DateFormatter.normalize(periodeAkhir) !=
+            DateFormatter.normalize(tanggalBayar)) {
+      throw ArgumentError(
+        'Tanggal akhir periode harus sama dengan tanggal pembayaran.',
+      );
+    }
+    final sisaKasbonSetelahnya = (sisaKasbonSebelumnya - potonganKasbon)
+        .clamp(0.0, double.infinity)
+        .toDouble();
     final totalUpahBersih = totalUpahKotor - potonganKasbon;
 
     final bayarId = _uuid.v4();
@@ -739,7 +595,10 @@ class DatabaseService {
     );
 
     if (isFirebaseConnected) {
-      await _firestore!.collection('pembayaran_upah').doc(bayarId).set(pembayaran.toMap());
+      await _firestore!
+          .collection('pembayaran_upah')
+          .doc(bayarId)
+          .set(pembayaran.toMap());
       await _firestore!.collection('petukang').doc(petukang.id).update({
         'sisaKasbon': sisaKasbonSetelahnya,
         'tanggalBayarTerakhir': tanggalBayar.toIso8601String(),
@@ -762,6 +621,7 @@ class DatabaseService {
           });
         }
       }
+      // Add or update the payment date as amber (tanggalBayarUpah)
       // Add or update the payment date as amber (tanggalBayarUpah)
       final paymentDateDocId = '${petukang.id}_${DateFormatter.dateKey(tanggalBayar)}';
       batch.set(
@@ -793,7 +653,8 @@ class DatabaseService {
       // 2. Update absensi in period: kerjaBelumBayar (blue) -> kerjaSudahBayar (green)
       for (int i = 0; i < _localAbsensi.length; i++) {
         final a = _localAbsensi[i];
-        if (a.petukangId == petukang.id && a.status == AbsenStatus.kerjaBelumBayar) {
+        if (a.petukangId == petukang.id &&
+            a.status == AbsenStatus.kerjaBelumBayar) {
           final aDate = DateFormatter.normalize(a.tanggal);
           if (!aDate.isBefore(periodeAwal) && !aDate.isAfter(periodeAkhir)) {
             _localAbsensi[i] = a.copyWith(
@@ -804,29 +665,6 @@ class DatabaseService {
         }
       }
 
-      // 3. Set payment day to amber (tanggalBayarUpah)
-      final normTanggalBayar = DateFormatter.normalize(tanggalBayar);
-      final paymentAbsIndex = _localAbsensi.indexWhere((a) =>
-          a.petukangId == petukang.id &&
-          a.tanggal.year == normTanggalBayar.year &&
-          a.tanggal.month == normTanggalBayar.month &&
-          a.tanggal.day == normTanggalBayar.day);
-
-      final amberAbs = // Absensi(
-        id: '${petukang.id}_${DateFormatter.dateKey(normTanggalBayar)}',
-        petukangId: petukang.id,
-        tanggal: normTanggalBayar,
-        status: AbsenStatus.tanggalBayarUpah,
-        upahHarian: upahHarian,
-        pembayaranId: bayarId,
-        keterangan: 'Pembayaran Upah ($jumlahHariKerja hari)',
-      );
-
-      if (paymentAbsIndex != -1) {
-        _localAbsensi[paymentAbsIndex] = amberAbs;
-      } else {
-        _localAbsensi.add(amberAbs);
-      }
 
       _notifyAll();
     }

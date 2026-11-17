@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+
 import '../../models/petukang.dart';
 import '../../utils/currency_formatter.dart';
+import '../../utils/theme.dart';
 
 class NaikkanUpahDialog extends StatefulWidget {
   final Petukang petukang;
@@ -37,7 +39,8 @@ class _NaikkanUpahDialogState extends State<NaikkanUpahDialog> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    const primaryColor = Colors.teal; // Menggunakan warna yang lebih profesional
+    const primaryColor =
+        Colors.teal; // Menggunakan warna yang lebih profesional
 
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -75,8 +78,13 @@ class _NaikkanUpahDialogState extends State<NaikkanUpahDialog> {
                   CircleAvatar(
                     backgroundColor: primaryColor.withOpacity(0.15),
                     child: Text(
-                      widget.petukang.nama.isNotEmpty ? widget.petukang.nama[0].toUpperCase() : 'P',
-                      style: const TextStyle(color: primaryColor, fontWeight: FontWeight.bold),
+                      widget.petukang.nama.isNotEmpty
+                          ? widget.petukang.nama[0].toUpperCase()
+                          : 'P',
+                      style: const TextStyle(
+                        color: primaryColor,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -86,14 +94,20 @@ class _NaikkanUpahDialogState extends State<NaikkanUpahDialog> {
                       children: [
                         Text(
                           widget.petukang.nama,
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 2),
                         Text(
                           widget.petukang.role.label,
-                          style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 13,
+                          ),
                         ),
                       ],
                     ),
@@ -101,10 +115,13 @@ class _NaikkanUpahDialogState extends State<NaikkanUpahDialog> {
                 ],
               ),
               const SizedBox(height: 16),
-              
+
               // Kartu Informasi Upah Saat Ini
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.grey.shade50,
                   borderRadius: BorderRadius.circular(12),
@@ -115,7 +132,10 @@ class _NaikkanUpahDialogState extends State<NaikkanUpahDialog> {
                   children: [
                     Text(
                       'Upah Saat Ini',
-                      style: TextStyle(color: Colors.grey.shade700, fontSize: 13),
+                      style: TextStyle(
+                        color: Colors.grey.shade700,
+                        fontSize: 13,
+                      ),
                     ),
                     Text(
                       CurrencyFormatter.format(widget.petukang.upahHarian),
@@ -142,8 +162,13 @@ class _NaikkanUpahDialogState extends State<NaikkanUpahDialog> {
                 decoration: InputDecoration(
                   labelText: 'Upah Harian Baru',
                   hintText: 'Rp 0',
-                  prefixIcon: const Icon(Icons.payments_outlined, color: primaryColor),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  prefixIcon: const Icon(
+                    Icons.payments_outlined,
+                    color: primaryColor,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide(color: Colors.grey.shade300),
@@ -180,7 +205,9 @@ class _NaikkanUpahDialogState extends State<NaikkanUpahDialog> {
                     padding: EdgeInsets.only(bottom: 24),
                     child: Icon(Icons.notes_outlined, color: primaryColor),
                   ),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide(color: Colors.grey.shade300),
@@ -213,11 +240,15 @@ class _NaikkanUpahDialogState extends State<NaikkanUpahDialog> {
             foregroundColor: Colors.white,
             elevation: 0,
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
           ),
           onPressed: () {
             if (_formKey.currentState?.validate() ?? false) {
-              final upahBaru = CurrencyFormatter.parse(_upahBaruController.text);
+              final upahBaru = CurrencyFormatter.parse(
+                _upahBaruController.text,
+              );
               Navigator.pop(context, {
                 'upahBaru': upahBaru,
                 'alasan': _alasanController.text.trim(),

@@ -92,7 +92,8 @@ class Absensi {
     return {
       'id': id,
       'petukangId': petukangId,
-      'tanggal': "${tanggal.year.toString().padLeft(4, '0')}-${tanggal.month.toString().padLeft(2, '0')}-${tanggal.day.toString().padLeft(2, '0')}",
+      'tanggal':
+          "${tanggal.year.toString().padLeft(4, '0')}-${tanggal.month.toString().padLeft(2, '0')}-${tanggal.day.toString().padLeft(2, '0')}",
       'status': status.name,
       'upahHarian': upahHarian,
       'pembayaranId': pembayaranId,
@@ -103,12 +104,17 @@ class Absensi {
   factory Absensi.fromMap(Map<String, dynamic> map, String docId) {
     DateTime parsedDate;
     if (map['tanggal'] != null) {
-      parsedDate = DateTime.tryParse(map['tanggal'].toString()) ?? DateTime.now();
+      parsedDate =
+          DateTime.tryParse(map['tanggal'].toString()) ?? DateTime.now();
     } else {
       parsedDate = DateTime.now();
     }
     // Normalize to date only
-    final normalizedDate = DateTime(parsedDate.year, parsedDate.month, parsedDate.day);
+    final normalizedDate = DateTime(
+      parsedDate.year,
+      parsedDate.month,
+      parsedDate.day,
+    );
 
     return Absensi(
       id: docId.isNotEmpty ? docId : (map['id'] ?? ''),

@@ -1,8 +1,4 @@
-enum WorkerRole {
-  kepalaTukang,
-  petukang,
-  kenek,
-}
+enum WorkerRole { kepalaTukang, petukang, kenek }
 
 extension WorkerRoleExt on WorkerRole {
   String get label {

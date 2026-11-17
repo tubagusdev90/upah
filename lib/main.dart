@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import 'services/database_service.dart';
 import 'screens/dashboard_screen.dart';
 import 'screens/petukang/petukang_list_screen.dart';
@@ -6,6 +7,7 @@ import 'screens/absensi/absensi_screen.dart';
 import 'screens/kasbon/kasbon_screen.dart';
 import 'screens/upah/pembayaran_upah_screen.dart';
 import 'screens/settings/settings_screen.dart';
+import 'utils/theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,31 +23,7 @@ class UpahPetukangApp extends StatelessWidget {
     return MaterialApp(
       title: 'UpahPetukang',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF1E3A8A), // Deep Indigo / Contractor Blue
-          primary: const Color(0xFF1E3A8A),
-          secondary: const Color(0xFFF59E0B), // Safety Amber
-        ),
-        appBarTheme: const AppBarTheme(
-          centerTitle: false,
-          elevation: 0,
-          backgroundColor: Colors.white,
-          foregroundColor: Color(0xFF1E3A8A),
-          titleTextStyle: TextStyle(
-            color: Color(0xFF1E3A8A),
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        cardTheme: CardThemeData(
-          elevation: 0.5,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      ),
+      theme: AppTheme.light,
       home: const MainNavigationShell(),
     );
   }
@@ -92,11 +70,18 @@ class _MainNavigationShellState extends State<MainNavigationShell> {
                 padding: const EdgeInsets.symmetric(vertical: 16.0),
                 child: Column(
                   children: const [
-                    Icon(Icons.construction, color: Color(0xFF1E3A8A), size: 32),
+                    Icon(
+                      Icons.construction,
+                      color: Color(0xFF1E3A8A),
+                      size: 32,
+                    ),
                     SizedBox(height: 4),
                     Text(
                       'UpahPetukang',
-                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ],
                 ),
