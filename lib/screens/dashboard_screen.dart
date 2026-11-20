@@ -5,6 +5,7 @@ import '../../services/database_service.dart';
 import '../../utils/currency_formatter.dart';
 import '../../widgets/stat_card.dart';
 import '../../utils/theme.dart';
+import '../../models/absensi.dart';
 
 class DashboardScreen extends StatelessWidget {
   final Function(int) onNavigateTab;
@@ -84,9 +85,9 @@ class DashboardScreen extends StatelessWidget {
             0.0,
             (sum, p) => sum + p.totalUpahBersih,
           );
-          final totalUpahUnpaid = pembayaranList.fold(
+                    final totalPotonganKasbon = pembayaranList.fold<double>(
             0.0,
-            (sum, p) => sum + (p.totalUpahKotor - p.totalUpahBersih),
+            (sum, p) => sum + p.potonganKasbon,
           );
           final totalKasbonPaid = db.currentKasbonList.fold(
             0.0,
@@ -171,31 +172,7 @@ class DashboardScreen extends StatelessWidget {
                           physics: const NeverScrollableScrollPhysics(),
                           childAspectRatio: isSmall ? 1.5 : 1.6,
                           children: [
-                            StatCard(
-                              title: 'Total Petukang',
-                              value: '$totalPetukang Orang',
-                              subtitle:
-                                  '${petukangList.where((p) => p.role == WorkerRole.kepalaTukang).length} Kepala, ${petukangList.where((p) => p.role == WorkerRole.petukang).length} Tukang, ${petukangList.where((p) => p.role == WorkerRole.kenek).length} Kenek',
-                              icon: Icons.groups,
-                              color: Colors.indigo,
-                              onTap: () => onNavigateTab(1),
-                            ),
-                            StatCard(
-                              title: 'Total Kasbon Berjalan',
-                              value: CurrencyFormatter.format(totalKasbon),
-                              subtitle: 'Boleh melebihi upah',
-                              icon: Icons.money_off,
-                              color: Colors.red.shade700,
-                              onTap: () => onNavigateTab(3),
-                            ),
-                            StatCard(
-                              title: 'Status Kehadiran',
-                              value: 'Kalender Warna',
-                              subtitle: 'Biru, Hijau, Amber, Merah',
-                              icon: Icons.calendar_month,
-                              color: Colors.blue.shade700,
-                              onTap: () => onNavigateTab(2),
-                            ),
+                            
                             StatCard(
                               title: 'Total Upah Dibayar',
                               value: CurrencyFormatter.format(totalUpahPaid),
@@ -206,18 +183,40 @@ class DashboardScreen extends StatelessWidget {
                             ),
                             StatCard(
                               title: 'Total Upah Belum Dibayar',
-                              value: CurrencyFormatter.format(totalUpahUnpaid),
+                              value: CurrencyFormatter.format(totalPotonganKasbon),
                               subtitle: 'Upah yang masih harus dibayar',
                               icon: Icons.money_off_csred,
                               color: Colors.orange.shade700,
                               onTap: () => onNavigateTab(4),
                             ),
+                           
+                          ],
+                        );
+                      },
+                    ),
+                    SizedBox(height: 18),
+                    Divider(
+                      color: Colors.grey.shade400,
+                      thickness: 1,
+                    ),
+                    SizedBox(height: 18),
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        final isSmall = constraints.maxWidth < 600;
+                        return GridView.count(
+                          crossAxisCount: isSmall ? 2 : 4,
+                          crossAxisSpacing: 8,
+                          mainAxisSpacing: 8,
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          childAspectRatio: isSmall ? 1.5 : 1.6,
+                          children: [
                             StatCard(
-                              title: 'Kasbon Sudah Bayar',
-                              value: CurrencyFormatter.format(totalKasbonPaid),
-                              subtitle: 'Kasbon yang sudah lunas',
-                              icon: Icons.check_circle,
-                              color: Colors.teal.shade700,
+                              title: 'Total Kasbon Berjalan',
+                              value: CurrencyFormatter.format(totalKasbon),
+                              subtitle: 'Boleh melebihi upah',
+                              icon: Icons.money_off,
+                              color: Colors.red.shade700,
                               onTap: () => onNavigateTab(3),
                             ),
                             StatCard(
@@ -230,6 +229,26 @@ class DashboardScreen extends StatelessWidget {
                               color: Colors.red.shade700,
                               onTap: () => onNavigateTab(3),
                             ),
+                            StatCard(
+                              title: 'Total Petukang',
+                              value: '$totalPetukang Orang',
+                              subtitle:
+                                  '${petukangList.where((p) => p.role == WorkerRole.kepalaTukang).length} Kepala, ${petukangList.where((p) => p.role == WorkerRole.petukang).length} Tukang, ${petukangList.where((p) => p.role == WorkerRole.kenek).length} Kenek',
+                              icon: Icons.groups,
+                              color: Colors.indigo,
+                              onTap: () => onNavigateTab(1),
+                            ),
+                            
+                            
+                            StatCard(
+                              title: 'Kasbon Sudah Bayar',
+                              value: CurrencyFormatter.format(totalKasbonPaid),
+                              subtitle: 'Kasbon yang sudah lunas',
+                              icon: Icons.check_circle,
+                              color: Colors.teal.shade700,
+                              onTap: () => onNavigateTab(3),
+                            ),
+                            
                           ],
                         );
                       },
@@ -330,73 +349,156 @@ class DashboardScreen extends StatelessWidget {
                     const SizedBox(height: 8),
 
                     ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(), // Perbaikan typo di sini
-                      itemCount: petukangList.take(5).length,
-                      itemBuilder: (context, index) {
-                        final p = petukangList[index];
-                        return Card(
-                          margin: const EdgeInsets.only(bottom: 8),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: ListTile(
-                            leading: CircleAvatar(
-                              backgroundImage: p.fotoUrl.isNotEmpty
-                                  ? NetworkImage(p.fotoUrl)
-                                  : null,
-                              child: p.fotoUrl.isEmpty
-                                  ? const Icon(Icons.person)
-                                  : null,
-                            ),
-                            title: Text(
-                              p.nama,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            subtitle: Text(
-                              '${p.role.label} • Upah: ${CurrencyFormatter.format(p.upahHarian)}/hari',
-                            ),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                if (p.sisaKasbon > 0)
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 3,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.red.shade50,
-                                      borderRadius: BorderRadius.circular(6),
-                                      border: Border.all(
-                                        color: Colors.red.shade200,
-                                      ),
-                                    ),
-                                    child: Text(
-                                      'Kasbon: ${CurrencyFormatter.format(p.sisaKasbon)}',
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.red.shade800,
-                                      ),
-                                    ),
-                                  ),
-                                const SizedBox(width: 8),
-                                IconButton(
-                                  icon: const Icon(
-                                    Icons.arrow_forward_ios,
-                                    size: 16,
-                                  ),
-                                  onPressed: () => onNavigateTab(1),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
+  shrinkWrap: true,
+  physics: const NeverScrollableScrollPhysics(),
+  itemCount: petukangList.take(5).length,
+  itemBuilder: (context, index) {
+    final p = petukangList[index];
+
+    return StreamBuilder<List<Absensi>>(
+      stream: db.getAbsensiForPetukang(p.id),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting &&
+            !snapshot.hasData) {
+          return Card(
+            margin: const EdgeInsets.only(bottom: 10),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Center(
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Colors.indigo,
+                ),
+              ),
+            ),
+          );
+        }
+
+        if (snapshot.hasError) {
+          return Card(
+            margin: const EdgeInsets.only(bottom: 10),
+            child: ListTile(
+              leading: const Icon(Icons.error_outline, color: Colors.red),
+              title: Text(p.nama),
+              subtitle: const Text('Gagal memuat data absensi'),
+            ),
+          );
+        }
+
+        final absensiList = snapshot.data ?? [];
+
+        // Hanya menghitung hari kerja yang belum dibayar.
+        final absensiBelumDibayar = absensiList.where(
+          (a) => a.status == AbsenStatus.kerjaBelumBayar,
+        ).toList();
+
+        // Jumlah hari masuk yang belum dibayar.
+        final jumlahHari = absensiBelumDibayar.length;
+
+        // Total upah berdasarkan tarif pada masing-masing absensi.
+        final totalUpah = absensiBelumDibayar.fold<double>(
+          0.0,
+          (total, a) => total + a.upahHarian,
+        );
+
+        return Card(
+          margin: const EdgeInsets.only(bottom: 10),
+          elevation: 1,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Identitas petukang
+                Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 23,
+                      backgroundColor: Colors.indigo.shade50,
+                      backgroundImage: p.fotoUrl.isNotEmpty
+                          ? NetworkImage(p.fotoUrl)
+                          : null,
+                      child: p.fotoUrl.isEmpty
+                          ? const Icon(
+                              Icons.person,
+                              color: Colors.indigo,
+                            )
+                          : null,
                     ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            p.nama,
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            p.role.label,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: 'Lihat detail petukang',
+                      icon: const Icon(
+                        Icons.arrow_forward_ios,
+                        size: 16,
+                      ),
+                      onPressed: () => onNavigateTab(1),
+                    ),
+                  ],
+                ),
+
+                const Divider(height: 22),
+
+                // Informasi upah
+                _buildInfoRow(
+                  'Upah Harian',
+                  CurrencyFormatter.format(p.upahHarian),
+                ),
+
+                _buildInfoRow(
+                  'Hari Masuk Belum Dibayar',
+                  '$jumlahHari hari',
+                ),
+
+                _buildInfoRow(
+                  'Total Upah Belum Dibayar',
+                  CurrencyFormatter.format(totalUpah),
+                  isBold: true,
+                  valueColor: Colors.orange.shade800,
+                ),
+
+                _buildInfoRow(
+                  'Sisa Kasbon',
+                  CurrencyFormatter.format(p.sisaKasbon),
+                  valueColor: p.sisaKasbon > 0
+                      ? Colors.red.shade700
+                      : Colors.green.shade700,
+                  isBold: true,
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  },
+),
+                    
                   ],
                 ),
               ),
@@ -406,4 +508,39 @@ class DashboardScreen extends StatelessWidget {
       ),
     );
   }
+
+ Widget _buildInfoRow(
+  String label,
+  String value, {
+  Color? valueColor,
+  bool isBold = false,
+}) {
+  return Padding(
+    padding: const EdgeInsets.symmetric(vertical: 5),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey.shade700,
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          value,
+          textAlign: TextAlign.right,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: isBold ? FontWeight.bold : FontWeight.w600,
+            color: valueColor ?? Colors.black87,
+          ),
+        ),
+      ],
+    ),
+  );
+}
 }

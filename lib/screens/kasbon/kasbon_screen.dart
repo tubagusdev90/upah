@@ -124,6 +124,116 @@ class _KasbonScreenState extends State<KasbonScreen> {
                 ),
               ),
 
+              // Ringkasan saldo dan pembayaran kasbon per petukang.
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: Row(
+                  children: [
+                    const Expanded(
+                      child: Text(
+                        'Sisa Kasbon per Petukang',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      '${petukangList.length} petukang',
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(
+                height: 118,
+                child: petukangList.isEmpty
+                    ? const Center(child: Text('Belum ada data petukang'))
+                    : ListView.separated(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        scrollDirection: Axis.horizontal,
+                        itemCount: petukangList.length,
+                        separatorBuilder: (_, __) =>
+                            const SizedBox(width: 10),
+                        itemBuilder: (context, index) {
+                          final petukang = petukangList[index];
+                          final sisa = petukang.sisaKasbon;
+
+                          return SizedBox(
+                            width: 245,
+                            child: Card(
+                              margin: EdgeInsets.zero,
+                              elevation: 1,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                side: BorderSide(
+                                  color: Colors.grey.shade200,
+                                ),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(12),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      petukang.nama,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      CurrencyFormatter.format(sisa),
+                                      style: TextStyle(
+                                        color: sisa > 0
+                                            ? Colors.red.shade800
+                                            : Colors.green.shade700,
+                                        fontSize: 17,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const Spacer(),
+                                    SizedBox(
+                                      height: 32,
+                                      child: Align(
+                                        alignment: Alignment.centerLeft,
+                                        child: TextButton.icon(
+                                          onPressed: sisa > 0
+                                              ? () => _openBayarKasbonDialog(
+                                                    petukang,
+                                                  )
+                                              : null,
+                                          icon: const Icon(
+                                            Icons.payments_outlined,
+                                            size: 16,
+                                          ),
+                                          label: const Text(
+                                            'Bayar Kasbon',
+                                            style: TextStyle(fontSize: 12),
+                                          ),
+                                          style: TextButton.styleFrom(
+                                            foregroundColor:
+                                                Colors.green.shade800,
+                                            padding: EdgeInsets.zero,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+              ),
+              const SizedBox(height: 8),
+
               // Filter by Petukang
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -331,6 +441,187 @@ class _KasbonScreenState extends State<KasbonScreen> {
         },
       ),
     );
+  }
+
+  Future<void> _openBayarKasbonDialog(Petukang petukang) async {
+    final jumlahController = TextEditingController();
+    DateTime tanggalBayar = DateTime.now();
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              title: Row(
+                children: [
+                  Icon(Icons.payments_outlined, color: Colors.green.shade700),
+                  const SizedBox(width: 8),
+                  const Expanded(child: Text('Bayar Kasbon')),
+                ],
+              ),
+              content: SizedBox(
+                width: 420,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        petukang.nama,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.amber.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.amber.shade300),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Total sisa kasbon',
+                              style: TextStyle(fontSize: 12),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              CurrencyFormatter.format(petukang.sisaKasbon),
+                              style: TextStyle(
+                                color: Colors.red.shade800,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      TextFormField(
+                        controller: jumlahController,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [CurrencyInputFormatter()],
+                        decoration: const InputDecoration(
+                          labelText: 'Jumlah yang dibayar (Rp) *',
+                          prefixIcon: Icon(Icons.payments),
+                          hintText: 'Contoh: 200000',
+                          helperText: 'Tidak boleh melebihi sisa kasbon',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      InkWell(
+                        onTap: () async {
+                          final picked = await showDatePicker(
+                            context: context,
+                            initialDate: tanggalBayar,
+                            firstDate: DateTime(2020),
+                            lastDate: DateTime.now().add(
+                              const Duration(days: 3650),
+                            ),
+                          );
+                          if (picked != null) {
+                            setDialogState(() => tanggalBayar = picked);
+                          }
+                        },
+                        child: InputDecorator(
+                          decoration: const InputDecoration(
+                            labelText: 'Tanggal pembayaran *',
+                            prefixIcon: Icon(Icons.calendar_today),
+                            border: OutlineInputBorder(),
+                          ),
+                          child: Text(DateFormatter.format(tanggalBayar)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext, false),
+                  child: const Text('Batal'),
+                ),
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green.shade700,
+                    foregroundColor: Colors.white,
+                  ),
+                  icon: const Icon(Icons.check),
+                  label: const Text('Simpan Pembayaran'),
+                  onPressed: () {
+                    final jumlah = CurrencyFormatter.parse(
+                      jumlahController.text,
+                    );
+
+                    if (jumlah <= 0) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Jumlah pembayaran harus lebih dari 0.',
+                          ),
+                        ),
+                      );
+                      return;
+                    }
+
+                    if (jumlah > petukang.sisaKasbon) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Jumlah pembayaran melebihi sisa kasbon.',
+                          ),
+                        ),
+                      );
+                      return;
+                    }
+
+                    Navigator.pop(dialogContext, true);
+                  },
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    if (result == true) {
+      final jumlah = CurrencyFormatter.parse(jumlahController.text);
+      try {
+        await _db.bayarKasbon(
+          petukangId: petukang.id,
+          jumlah: jumlah,
+          tanggalBayar: tanggalBayar,
+        );
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              backgroundColor: Colors.green.shade700,
+              content: Text(
+                'Pembayaran kasbon ${CurrencyFormatter.format(jumlah)} '
+                'untuk ${petukang.nama} berhasil disimpan.',
+              ),
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              backgroundColor: Colors.red.shade700,
+              content: Text('Gagal membayar kasbon: $e'),
+            ),
+          );
+        }
+      }
+    }
+
+    jumlahController.dispose();
   }
 
   void _openAddKasbonDialog([List<Petukang>? list]) async {

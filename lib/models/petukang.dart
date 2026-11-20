@@ -35,9 +35,12 @@ class Petukang {
   final double upahHarian;
   final double sisaKasbon;
   final DateTime? tanggalBayarTerakhir;
+  /// Tanggal terakhir yang sudah masuk dalam periode upah yang dibayar.
+  final DateTime? tanggalAkhirPeriodeTerakhir;
   final bool isAktif;
   // New field to record the date of the latest wage increase
   final DateTime? tanggalKenaikanUpah;
+
 
   Petukang({
     required this.id,
@@ -49,6 +52,7 @@ class Petukang {
     required this.upahHarian,
     this.sisaKasbon = 0.0,
     this.tanggalBayarTerakhir,
+    this.tanggalAkhirPeriodeTerakhir,
     this.isAktif = true,
     this.tanggalKenaikanUpah,
   });
@@ -63,6 +67,7 @@ class Petukang {
     double? upahHarian,
     double? sisaKasbon,
     DateTime? tanggalBayarTerakhir,
+    DateTime? tanggalAkhirPeriodeTerakhir,
     bool? isAktif,
     DateTime? tanggalKenaikanUpah,
   }) {
@@ -76,6 +81,8 @@ class Petukang {
       upahHarian: upahHarian ?? this.upahHarian,
       sisaKasbon: sisaKasbon ?? this.sisaKasbon,
       tanggalBayarTerakhir: tanggalBayarTerakhir ?? this.tanggalBayarTerakhir,
+      tanggalAkhirPeriodeTerakhir:
+          tanggalAkhirPeriodeTerakhir ?? this.tanggalAkhirPeriodeTerakhir,
       isAktif: isAktif ?? this.isAktif,
       tanggalKenaikanUpah: tanggalKenaikanUpah ?? this.tanggalKenaikanUpah,
     );
@@ -92,6 +99,8 @@ class Petukang {
       'upahHarian': upahHarian,
       'sisaKasbon': sisaKasbon,
       'tanggalBayarTerakhir': tanggalBayarTerakhir?.toIso8601String(),
+      'tanggalAkhirPeriodeTerakhir':
+          tanggalAkhirPeriodeTerakhir?.toIso8601String(),
       'isAktif': isAktif,
       'tanggalKenaikanUpah': tanggalKenaikanUpah?.toIso8601String(),
     };
@@ -112,6 +121,12 @@ class Petukang {
       tanggalBayarTerakhir: map['tanggalBayarTerakhir'] != null
           ? DateTime.tryParse(map['tanggalBayarTerakhir'].toString())
           : null,
+      tanggalAkhirPeriodeTerakhir:
+          map['tanggalAkhirPeriodeTerakhir'] != null
+              ? DateTime.tryParse(
+                  map['tanggalAkhirPeriodeTerakhir'].toString(),
+                )
+              : null,
       isAktif: map['isAktif'] ?? true,
       tanggalKenaikanUpah: map['tanggalKenaikanUpah'] != null
           ? DateTime.tryParse(map['tanggalKenaikanUpah'].toString())

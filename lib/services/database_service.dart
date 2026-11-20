@@ -459,6 +459,202 @@ class DatabaseService {
     }
   }
 
+
+  /// Membayar kasbon secara langsung, terpisah dari proses pembayaran upah.
+  ///
+  /// Pembayaran dialokasikan ke kasbon yang paling lama terlebih dahulu.
+  /// Setiap pembayaran dicatat pada koleksi `pembayaran_kasbon`.
+  Future<void> bayarKasbon({
+    required String petukangId,
+    required double jumlah,
+    required DateTime tanggalBayar,
+  }) async {
+    if (jumlah <= 0) {
+      throw Exception('Jumlah pembayaran kasbon harus lebih dari 0.');
+    }
+
+    final tanggalNormal = DateTime(
+      tanggalBayar.year,
+      tanggalBayar.month,
+      tanggalBayar.day,
+    );
+    final pembayaranId = _uuid.v4();
+    final sekarang = DateTime.now();
+
+    DateTime parseTanggalKasbon(dynamic value) {
+      if (value is Timestamp) return value.toDate();
+      if (value is DateTime) return value;
+      return DateTime.tryParse(value?.toString() ?? '') ?? DateTime(1970);
+    }
+
+    if (isFirebaseConnected) {
+      final firestore = _firestore!;
+      final workerRef = firestore.collection('petukang').doc(petukangId);
+      final kasbonQuery = firestore
+          .collection('kasbon')
+          .where('petukangId', isEqualTo: petukangId);
+
+      // Ambil daftar referensi kasbon terlebih dahulu. Nilai dokumen dibaca
+      // kembali di dalam transaction agar saldo yang dipakai adalah nilai terbaru.
+      final daftarKasbon = await kasbonQuery.get();
+      final paymentRef = firestore
+          .collection('pembayaran_kasbon')
+          .doc(pembayaranId);
+
+      await firestore.runTransaction((transaction) async {
+        final workerSnapshot = await transaction.get(workerRef);
+        if (!workerSnapshot.exists) {
+          throw Exception('Data petukang tidak ditemukan.');
+        }
+
+        final kasbonTerbaru = <DocumentSnapshot<Map<String, dynamic>>>[];
+        for (final item in daftarKasbon.docs) {
+          final snapshot = await transaction.get(item.reference);
+          if (snapshot.exists) kasbonTerbaru.add(snapshot);
+        }
+
+        kasbonTerbaru.sort((a, b) {
+          final tanggalA = parseTanggalKasbon(a.data()?['tanggal']);
+          final tanggalB = parseTanggalKasbon(b.data()?['tanggal']);
+          final compareTanggal = tanggalA.compareTo(tanggalB);
+          if (compareTanggal != 0) return compareTanggal;
+          return a.id.compareTo(b.id);
+        });
+
+        double totalSisa = 0;
+        for (final doc in kasbonTerbaru) {
+          final data = doc.data() ?? {};
+          final sisa = (data['sisa'] as num?)?.toDouble() ??
+              (data['jumlah'] as num?)?.toDouble() ??
+              0.0;
+          totalSisa += sisa < 0 ? 0 : sisa;
+        }
+
+        if (totalSisa <= 0) {
+          throw Exception('Petukang ini tidak memiliki sisa kasbon.');
+        }
+        if (jumlah > totalSisa) {
+          throw Exception(
+            'Jumlah pembayaran melebihi sisa kasbon '
+            '(${totalSisa.toStringAsFixed(0)}).',
+          );
+        }
+
+        // Alokasikan pembayaran ke kasbon tertua terlebih dahulu.
+        double sisaPembayaran = jumlah;
+        final rincian = <Map<String, dynamic>>[];
+
+        for (final doc in kasbonTerbaru) {
+          if (sisaPembayaran <= 0) break;
+
+          final data = doc.data() ?? {};
+          final sisaKasbon = (data['sisa'] as num?)?.toDouble() ??
+              (data['jumlah'] as num?)?.toDouble() ??
+              0.0;
+
+          if (sisaKasbon <= 0) continue;
+
+          final dibayar = sisaPembayaran < sisaKasbon
+              ? sisaPembayaran
+              : sisaKasbon;
+          final sisaBaru = (sisaKasbon - dibayar)
+              .clamp(0.0, double.infinity)
+              .toDouble();
+
+          transaction.update(doc.reference, {
+            'sisa': sisaBaru,
+            'updatedAt': sekarang.toIso8601String(),
+          });
+
+          rincian.add({
+            'kasbonId': doc.id,
+            'jumlahDibayar': dibayar,
+          });
+          sisaPembayaran -= dibayar;
+        }
+
+        final saldoAkhir = (totalSisa - jumlah)
+            .clamp(0.0, double.infinity)
+            .toDouble();
+
+        transaction.update(workerRef, {
+          'sisaKasbon': saldoAkhir,
+        });
+
+        transaction.set(paymentRef, {
+          'id': pembayaranId,
+          'petukangId': petukangId,
+          'tanggalBayar': tanggalNormal.toIso8601String(),
+          'jumlah': jumlah,
+          'rincian': rincian,
+          'metode': 'pembayaran_langsung',
+          'keterangan': 'Pembayaran kasbon langsung',
+          'createdAt': sekarang.toIso8601String(),
+        });
+      });
+    } else {
+      final indexPetukang =
+          _localPetukang.indexWhere((p) => p.id == petukangId);
+      if (indexPetukang == -1) {
+        throw Exception('Data petukang tidak ditemukan.');
+      }
+
+      final kasbonPetukang = _localKasbon
+          .where((k) => k.petukangId == petukangId)
+          .toList()
+        ..sort((a, b) {
+          final compareTanggal = a.tanggal.compareTo(b.tanggal);
+          return compareTanggal != 0
+              ? compareTanggal
+              : a.id.compareTo(b.id);
+        });
+
+      final totalSisa = kasbonPetukang.fold<double>(
+        0,
+        (total, item) => total + item.sisa,
+      );
+
+      if (totalSisa <= 0) {
+        throw Exception('Petukang ini tidak memiliki sisa kasbon.');
+      }
+      if (jumlah > totalSisa) {
+        throw Exception(
+          'Jumlah pembayaran melebihi sisa kasbon '
+          '(${totalSisa.toStringAsFixed(0)}).',
+        );
+      }
+
+      double sisaPembayaran = jumlah;
+      for (final kasbon in kasbonPetukang) {
+        if (sisaPembayaran <= 0) break;
+        if (kasbon.sisa <= 0) continue;
+
+        final dibayar = sisaPembayaran < kasbon.sisa
+            ? sisaPembayaran
+            : kasbon.sisa;
+        final indexKasbon =
+            _localKasbon.indexWhere((item) => item.id == kasbon.id);
+
+        if (indexKasbon != -1) {
+          _localKasbon[indexKasbon] = kasbon.copyWith(
+            sisa: (kasbon.sisa - dibayar)
+                .clamp(0.0, double.infinity)
+                .toDouble(),
+          );
+        }
+        sisaPembayaran -= dibayar;
+      }
+
+      final petukang = _localPetukang[indexPetukang];
+      _localPetukang[indexPetukang] = petukang.copyWith(
+        sisaKasbon: (totalSisa - jumlah)
+            .clamp(0.0, double.infinity)
+            .toDouble(),
+      );
+      _notifyAll();
+    }
+  }
+
   // ==================== PEMBAYARAN UPAH & SLIP ====================
 
   Stream<List<PembayaranUpah>> getPembayaranList({String? petukangId}) {
@@ -496,17 +692,21 @@ class DatabaseService {
     );
   }
 
-  /// Menghitung periode pembayaran upah:
-  /// Dimulai dari sehari setelah tanggal bayar terakhir (atau tgl join jika belum pernah),
-  /// sampai tanggal pembayaran saat ini.
+  /// Awal periode adalah sehari setelah akhir periode kerja yang terakhir dibayar.
+  /// Tanggal transfer/pembayaran tidak digunakan sebagai penentu awal periode.
   DateTime hitungPeriodeAwal(Petukang petukang) {
-    if (petukang.tanggalBayarTerakhir != null) {
-      return DateFormatter.normalize(
-        petukang.tanggalBayarTerakhir!.add(const Duration(days: 1)),
-      );
-    }
-    return DateFormatter.normalize(petukang.tanggalJoin);
+  final tanggalAkhir =
+      petukang.tanggalAkhirPeriodeTerakhir ??
+      petukang.tanggalBayarTerakhir;
+
+  if (tanggalAkhir != null) {
+    return DateFormatter.normalize(
+      tanggalAkhir.add(const Duration(days: 1)),
+    );
   }
+
+  return DateFormatter.normalize(petukang.tanggalJoin);
+}
 
   /// Menghitung hari kerja yang belum dibayar (status kerjaBelumBayar / biru) dalam periode tersebut
   
@@ -540,135 +740,818 @@ List<Absensi> getUnpaidWorkDays(
   /// Memproses pembayaran upah:
   /// - Catat slip pembayaran upah
   /// - Kurangi sisa kasbon petukang sebesar potonganKasbon
-  /// - Update tanggalBayarTerakhir petukang menjadi tanggalBayar
-  /// - Ubah status hari kerja yang belum dibayar (biru) menjadi sudah dibayar (hijau)
-  /// - Tandai tanggal pembayaran upah dengan status amber
-  Future<PembayaranUpah> prosesPembayaranUpah({
-    required Petukang petukang,
-    required DateTime tanggalBayar,
-    required DateTime periodeAwal,
-    required DateTime periodeAkhir,
-    required int jumlahHariKerja,
-    required double upahHarian,
-    required double totalUpahKotor,
-    required double potonganKasbon,
-    required String keterangan,
-  }) async {
-    final sisaKasbonSebelumnya = petukang.sisaKasbon;
-    if (potonganKasbon < 0 ||
-        potonganKasbon > sisaKasbonSebelumnya ||
-        potonganKasbon > totalUpahKotor) {
-      throw ArgumentError(
-        'Potongan kasbon tidak boleh melebihi sisa kasbon atau total upah kotor.',
-      );
-    }
-    if (periodeAkhir.isBefore(periodeAwal) ||
-        DateFormatter.normalize(periodeAkhir) !=
-            DateFormatter.normalize(tanggalBayar)) {
-      throw ArgumentError(
-        'Tanggal akhir periode harus sama dengan tanggal pembayaran.',
-      );
-    }
-    final sisaKasbonSetelahnya = (sisaKasbonSebelumnya - potonganKasbon)
-        .clamp(0.0, double.infinity)
-        .toDouble();
-    final totalUpahBersih = totalUpahKotor - potonganKasbon;
+  /// - Simpan tanggal pembayaran dan akhir periode kerja secara terpisah
+  /// - Ubah hanya absensi kerjaBelumBayar dalam rentang periode menjadi sudah dibayar
+  /// - Tidak mengubah status absensi pada tanggal pembayaran di luar periode
+  
+Future<PembayaranUpah> prosesPembayaranUpah({
+  required Petukang petukang,
+  required DateTime tanggalBayar,
+  required DateTime periodeAwal,
+  required DateTime periodeAkhir,
+  required int jumlahHariKerja,
+  required double upahHarian,
+  required double totalUpahKotor,
+  required double potonganKasbon,
+  required String keterangan,
+}) async {
+  // =====================================================
+  // 1. NORMALISASI TANGGAL
+  // =====================================================
 
-    final bayarId = _uuid.v4();
-    final pembayaran = PembayaranUpah(
-      id: bayarId,
-      petukangId: petukang.id,
-      petukangNama: petukang.nama,
-      petukangRole: petukang.role.label,
-      tanggalBayar: DateFormatter.normalize(tanggalBayar),
-      periodeAwal: DateFormatter.normalize(periodeAwal),
-      periodeAkhir: DateFormatter.normalize(periodeAkhir),
-      jumlahHariKerja: jumlahHariKerja,
-      upahHarian: upahHarian,
-      totalUpahKotor: totalUpahKotor,
-      sisaKasbonSebelumnya: sisaKasbonSebelumnya,
-      potonganKasbon: potonganKasbon,
-      sisaKasbonSetelahnya: sisaKasbonSetelahnya,
-      totalUpahBersih: totalUpahBersih,
-      keterangan: keterangan,
-      createdAt: DateTime.now(),
+  final tanggalBayarNormal =
+      DateFormatter.normalize(tanggalBayar);
+
+  final periodeAwalNormal =
+      DateFormatter.normalize(periodeAwal);
+
+  final periodeAkhirNormal =
+      DateFormatter.normalize(periodeAkhir);
+
+  // =====================================================
+  // 2. VALIDASI PERIODE
+  // =====================================================
+
+  if (periodeAwalNormal.isAfter(periodeAkhirNormal)) {
+    throw ArgumentError(
+      'Tanggal awal periode tidak boleh melewati '
+      'tanggal akhir periode.',
+    );
+  }
+
+  // Tanggal pembayaran boleh setelah tanggal akhir periode,
+  // tetapi tidak boleh sebelum tanggal akhir periode.
+  if (tanggalBayarNormal.isBefore(periodeAkhirNormal)) {
+    throw ArgumentError(
+      'Tanggal pembayaran tidak boleh lebih awal '
+      'dari tanggal akhir periode.',
+    );
+  }
+
+  if (jumlahHariKerja <= 0) {
+    throw ArgumentError(
+      'Jumlah hari kerja minimal 1 hari.',
+    );
+  }
+
+  if (upahHarian < 0 || totalUpahKotor < 0) {
+    throw ArgumentError(
+      'Upah harian dan total upah tidak boleh negatif.',
+    );
+  }
+
+  // Pastikan perhitungan upah konsisten.
+  final totalSeharusnya = jumlahHariKerja * upahHarian;
+
+  if ((totalUpahKotor - totalSeharusnya).abs() > 1) {
+    throw ArgumentError(
+      'Total upah kotor tidak sesuai dengan '
+      'jumlah hari kerja x upah harian.',
+    );
+  }
+
+  // =====================================================
+  // 3. VALIDASI KASBON
+  // =====================================================
+
+  final sisaKasbonSebelumnya = petukang.sisaKasbon;
+
+  if (potonganKasbon < 0 ||
+      potonganKasbon > sisaKasbonSebelumnya ||
+      potonganKasbon > totalUpahKotor) {
+    throw ArgumentError(
+      'Potongan kasbon tidak boleh melebihi '
+      'sisa kasbon atau total upah kotor.',
+    );
+  }
+
+  final sisaKasbonSetelahnya =
+      (sisaKasbonSebelumnya - potonganKasbon)
+          .clamp(0.0, double.infinity)
+          .toDouble();
+
+  final totalUpahBersih =
+      totalUpahKotor - potonganKasbon;
+
+  // =====================================================
+  // 4. BUAT DATA PEMBAYARAN
+  // =====================================================
+
+  final bayarId = _uuid.v4();
+
+  final pembayaran = PembayaranUpah(
+    id: bayarId,
+    petukangId: petukang.id,
+    petukangNama: petukang.nama,
+    petukangRole: petukang.role.label,
+    tanggalBayar: tanggalBayarNormal,
+    periodeAwal: periodeAwalNormal,
+    periodeAkhir: periodeAkhirNormal,
+    jumlahHariKerja: jumlahHariKerja,
+    upahHarian: upahHarian,
+    totalUpahKotor: totalUpahKotor,
+    sisaKasbonSebelumnya: sisaKasbonSebelumnya,
+    potonganKasbon: potonganKasbon,
+    sisaKasbonSetelahnya: sisaKasbonSetelahnya,
+    totalUpahBersih: totalUpahBersih,
+    keterangan: keterangan,
+    createdAt: DateTime.now(),
+  );
+
+  // =====================================================
+  // 5. PROSES FIREBASE FIRESTORE
+  // =====================================================
+
+  if (isFirebaseConnected) {
+    final firestore = _firestore!;
+
+    // Ambil absensi Masuk yang belum dibayar.
+    final absensiDocs = await firestore
+        .collection('absensi')
+        .where(
+          'petukangId',
+          isEqualTo: petukang.id,
+        )
+        .where(
+          'status',
+          isEqualTo: 'kerjaBelumBayar',
+        )
+        .get();
+
+    // Siapkan batch Firestore.
+    final batch = firestore.batch();
+
+    // -------------------------------------------------
+    // A. SIMPAN RIWAYAT PEMBAYARAN
+    // -------------------------------------------------
+
+    batch.set(
+      firestore
+          .collection('pembayaran_upah')
+          .doc(bayarId),
+      pembayaran.toMap(),
     );
 
-    if (isFirebaseConnected) {
-      await _firestore!
-          .collection('pembayaran_upah')
-          .doc(bayarId)
-          .set(pembayaran.toMap());
-      await _firestore!.collection('petukang').doc(petukang.id).update({
-        'sisaKasbon': sisaKasbonSetelahnya,
-        'tanggalBayarTerakhir': tanggalBayar.toIso8601String(),
-      });
-      // Mark unpaid days as paid
-      final absensiDocs = await _firestore!
-          .collection('absensi')
-          .where('petukangId', isEqualTo: petukang.id)
-          .where('status', isEqualTo: 'kerjaBelumBayar')
-          .get();
+    // -------------------------------------------------
+    // B. UPDATE DATA PETUKANG
+    // -------------------------------------------------
 
-      final batch = _firestore!.batch();
-      for (var doc in absensiDocs.docs) {
-        final a = Absensi.fromMap(doc.data(), doc.id);
-        final aDate = DateFormatter.normalize(a.tanggal);
-        if (!aDate.isBefore(periodeAwal) && !aDate.isAfter(periodeAkhir)) {
-          batch.update(doc.reference, {
+    batch.update(
+      firestore
+          .collection('petukang')
+          .doc(petukang.id),
+      {
+        'sisaKasbon': sisaKasbonSetelahnya,
+
+        // Tanggal uang dibayarkan.
+        'tanggalBayarTerakhir':
+            tanggalBayarNormal.toIso8601String(),
+
+        // Tanggal terakhir pekerjaan yang sudah dibayar.
+        'tanggalAkhirPeriodeTerakhir':
+            periodeAkhirNormal.toIso8601String(),
+      },
+    );
+
+    // -------------------------------------------------
+    // C. UPDATE ABSENSI DALAM PERIODE
+    // -------------------------------------------------
+
+    int jumlahAbsensiDiperbarui = 0;
+
+    for (final doc in absensiDocs.docs) {
+      final data = doc.data();
+
+      final tanggalValue = data['tanggal'];
+
+      DateTime? tanggalAbsensi;
+
+      if (tanggalValue is Timestamp) {
+        tanggalAbsensi = tanggalValue.toDate();
+      } else if (tanggalValue is DateTime) {
+        tanggalAbsensi = tanggalValue;
+      } else if (tanggalValue != null) {
+        tanggalAbsensi =
+            DateTime.tryParse(tanggalValue.toString());
+      }
+
+      if (tanggalAbsensi == null) continue;
+
+      final tanggalNormal =
+          DateFormatter.normalize(tanggalAbsensi);
+
+      final dalamPeriode =
+          !tanggalNormal.isBefore(periodeAwalNormal) &&
+          !tanggalNormal.isAfter(periodeAkhirNormal);
+
+      if (dalamPeriode) {
+        batch.update(
+          doc.reference,
+          {
             'status': 'kerjaSudahBayar',
             'pembayaranId': bayarId,
-          });
-        }
-      }
-      // Add or update the payment date as amber (tanggalBayarUpah)
-      // Add or update the payment date as amber (tanggalBayarUpah)
-      final paymentDateDocId = '${petukang.id}_${DateFormatter.dateKey(tanggalBayar)}';
-      batch.set(
-        _firestore!.collection('absensi').doc(paymentDateDocId),
-        {
-          'id': paymentDateDocId,
-          'petukangId': petukang.id,
-          'tanggal': DateFormatter.dateKey(tanggalBayar),
-          'status': 'tanggalBayarUpah',
-          'upahHarian': upahHarian,
-          'pembayaranId': bayarId,
-          'keterangan': 'Pembayaran Upah ($jumlahHariKerja hari)',
-        },
-      );
-      await batch.commit();
-    } else {
-      // Local Database update
-      _localPembayaran.insert(0, pembayaran);
+          },
+        );
 
-      // 1. Update petukang
-      final pIndex = _localPetukang.indexWhere((p) => p.id == petukang.id);
-      if (pIndex != -1) {
-        _localPetukang[pIndex] = _localPetukang[pIndex].copyWith(
-          sisaKasbon: sisaKasbonSetelahnya,
-          tanggalBayarTerakhir: tanggalBayar,
+        jumlahAbsensiDiperbarui++;
+      }
+    }
+
+    // -------------------------------------------------
+    // D. COMMIT FIRESTORE
+    // -------------------------------------------------
+
+    await batch.commit();
+
+    debugPrint('================================');
+    debugPrint('PEMBAYARAN UPAH BERHASIL');
+    debugPrint('Petukang: ${petukang.nama}');
+    debugPrint('Tanggal bayar: $tanggalBayarNormal');
+    debugPrint('Periode awal: $periodeAwalNormal');
+    debugPrint('Periode akhir: $periodeAkhirNormal');
+    debugPrint('Hari kerja: $jumlahHariKerja');
+    debugPrint(
+      'Absensi diperbarui: $jumlahAbsensiDiperbarui',
+    );
+    debugPrint('Upah kotor: $totalUpahKotor');
+    debugPrint('Potongan kasbon: $potonganKasbon');
+    debugPrint('Upah bersih: $totalUpahBersih');
+    debugPrint('================================');
+  }
+
+  // =====================================================
+  // 6. PROSES LOCAL DATABASE
+  // =====================================================
+
+  else {
+    // Simpan riwayat pembayaran.
+    _localPembayaran.insert(0, pembayaran);
+
+    // Update data petukang.
+    final pIndex = _localPetukang.indexWhere(
+      (p) => p.id == petukang.id,
+    );
+
+    if (pIndex != -1) {
+      _localPetukang[pIndex] =
+          _localPetukang[pIndex].copyWith(
+        sisaKasbon: sisaKasbonSetelahnya,
+        tanggalBayarTerakhir: tanggalBayarNormal,
+        tanggalAkhirPeriodeTerakhir:
+            periodeAkhirNormal,
+      );
+    }
+
+    // Update hanya absensi Masuk yang belum dibayar
+    // dan berada dalam rentang periode.
+    for (int i = 0; i < _localAbsensi.length; i++) {
+      final absensi = _localAbsensi[i];
+
+      if (absensi.petukangId != petukang.id) {
+        continue;
+      }
+
+      if (absensi.status !=
+          AbsenStatus.kerjaBelumBayar) {
+        continue;
+      }
+
+      final tanggalAbsensi =
+          DateFormatter.normalize(absensi.tanggal);
+
+      final dalamPeriode =
+          !tanggalAbsensi.isBefore(periodeAwalNormal) &&
+          !tanggalAbsensi.isAfter(periodeAkhirNormal);
+
+      if (dalamPeriode) {
+        _localAbsensi[i] = absensi.copyWith(
+          status: AbsenStatus.kerjaSudahBayar,
+          pembayaranId: bayarId,
+        );
+      }
+    }
+
+    _notifyAll();
+  }
+
+  // =====================================================
+  // 7. KEMBALIKAN DATA SLIP
+  // =====================================================
+
+  return pembayaran;
+}
+
+
+
+
+/// Menjalankan perbaikan riwayat pembayaran upah secara langsung.
+  ///
+  /// Dipanggil oleh tombol "Perbaikan Upah Petukang" pada screen.
+  /// Tidak menggunakan mode simulasi.
+  Future<List<String>> perbaikiRiwayatPembayaranPetukang() async {
+    if (!isFirebaseConnected) {
+      throw Exception('Firebase belum terhubung.');
+    }
+
+    return migrasiRiwayatPembayaranNovember2026(simpan: true);
+  }
+
+  /// MIGRASI RIWAYAT PEMBAYARAN UPAH NOVEMBER 2026
+///
+/// Jalankan pertama kali dengan simpan: false untuk simulasi.
+/// Setelah hasil pemeriksaan benar, jalankan dengan simpan: true.
+
+Future<List<String>> migrasiRiwayatPembayaranNovember2026({
+  bool simpan = false,
+}) async {
+  if (!isFirebaseConnected) {
+    throw Exception('Firebase belum terhubung.');
+  }
+
+  final firestore = _firestore!;
+  final laporan = <String>[];
+
+  DateTime normal(DateTime d) => DateTime(d.year, d.month, d.day);
+
+  DateTime? parseTanggal(dynamic value) {
+    if (value == null) return null;
+    if (value is Timestamp) return normal(value.toDate());
+    if (value is DateTime) return normal(value);
+
+    return DateTime.tryParse(value.toString()) == null
+        ? null
+        : normal(DateTime.parse(value.toString()));
+  }
+
+  double angka(dynamic value) {
+    if (value is num) return value.toDouble();
+    return double.tryParse(value?.toString() ?? '') ?? 0;
+  }
+
+  String tanggalKey(DateTime d) {
+    final t = normal(d);
+    return '${t.year}-${t.month.toString().padLeft(2, '0')}-${t.day.toString().padLeft(2, '0')}';
+  }
+
+  DateTime tanggal(int day, int month) =>
+      DateTime(2026, month, day);
+
+  final workersSnapshot =
+      await firestore.collection('petukang').get();
+
+  final configs = [
+    {
+      'nama': 'ujang',
+      'tanggalBayar': [
+        tanggal(16, 10),
+        tanggal(18, 10),
+        tanggal(25, 10),
+        tanggal(3, 11),
+        tanggal(10, 11),
+        tanggal(17, 11),
+      ],
+      'awalPertama': tanggal(16, 10),
+      'upah': 130000.0,
+      'upahBaru': 150000.0,
+      'tanggalNaik': tanggal(4, 11),
+      'akhirKhusus': <String, DateTime>{},
+    },
+    {
+      'nama': 'mang jasun',
+      'tanggalBayar': [
+        tanggal(3, 11),
+        tanggal(10, 11),
+        tanggal(18, 11),
+      ],
+      'awalPertama': null,
+      'upah': 180000.0,
+      'akhirKhusus': {
+        tanggalKey(tanggal(18, 11)): tanggal(17, 11),
+      },
+    },
+    {
+      'nama': 'pak jajang',
+      'tanggalBayar': [
+        tanggal(17, 11),
+      ],
+      'awalPertama': null,
+      'upah': 180000.0,
+      'akhirKhusus': <String, DateTime>{},
+    },
+    {
+      'nama': 'hasan',
+      'tanggalBayar': [
+        tanggal(17, 11),
+      ],
+      'awalPertama': null,
+      'upah': 150000.0,
+      'akhirKhusus': <String, DateTime>{},
+    },
+  ];
+
+  final batch = firestore.batch();
+  var jumlahOperasi = 0;
+
+  void cekBatasBatch() {
+    if (jumlahOperasi >= 450) {
+      throw Exception(
+        'Operasi migrasi melebihi batas aman batch. '
+        'Pisahkan migrasi menjadi beberapa tahap.',
+      );
+    }
+  }
+
+  for (final config in configs) {
+    final nama = config['nama'] as String;
+    final tanggalBayar =
+        config['tanggalBayar'] as List<DateTime>;
+
+    final workerMatches = workersSnapshot.docs.where((doc) {
+      final workerName =
+          (doc.data()['nama'] ?? '').toString().toLowerCase();
+      return workerName.contains(nama);
+    }).toList();
+
+    if (workerMatches.length != 1) {
+      throw Exception(
+        'Petukang "$nama" ditemukan ${workerMatches.length} data. '
+        'Pastikan nama petukang unik.',
+      );
+    }
+
+    final workerDoc = workerMatches.first;
+    final worker = workerDoc.data();
+    final workerId = workerDoc.id;
+    final workerNama = worker['nama']?.toString() ?? nama;
+    final workerRole = worker['role']?.toString() ?? '';
+
+    final absensiSnapshot = await firestore
+        .collection('absensi')
+        .where('petukangId', isEqualTo: workerId)
+        .get();
+
+    final absensiDocs = absensiSnapshot.docs.toList();
+
+    DateTime? tanggalAbsensi(Map<String, dynamic> data) {
+      return parseTanggal(data['tanggal']);
+    }
+
+    final tanggalTersedia = absensiDocs
+        .map((doc) => tanggalAbsensi(doc.data()))
+        .whereType<DateTime>()
+        .toList()
+      ..sort();
+
+    final awalPertama =
+        config['awalPertama'] as DateTime? ??
+        (tanggalTersedia.isNotEmpty
+            ? tanggalTersedia.first
+            : parseTanggal(worker['tanggalJoin']) ??
+                tanggalBayar.first);
+
+    final paymentsSnapshot = await firestore
+        .collection('pembayaran_upah')
+        .where('petukangId', isEqualTo: workerId)
+        .get();
+
+    final existingPayments = paymentsSnapshot.docs;
+
+    DateTime previousEnd =
+        awalPertama.subtract(const Duration(days: 1));
+
+    double saldoKasbonBerjalan = 0;
+
+    for (final bayarDate in tanggalBayar) {
+      final keyBayar = tanggalKey(bayarDate);
+
+      final akhirKhusus =
+          config['akhirKhusus'] as Map<String, DateTime>;
+
+      final periodeAkhir =
+          akhirKhusus[keyBayar] ?? bayarDate;
+
+      final periodeAwal =
+          previousEnd.add(const Duration(days: 1));
+
+      if (periodeAkhir.isBefore(periodeAwal)) {
+        throw Exception(
+          'Periode tidak valid untuk $workerNama: '
+          '${tanggalKey(periodeAwal)} sampai '
+          '${tanggalKey(periodeAkhir)}',
         );
       }
 
-      // 2. Update absensi in period: kerjaBelumBayar (blue) -> kerjaSudahBayar (green)
-      for (int i = 0; i < _localAbsensi.length; i++) {
-        final a = _localAbsensi[i];
-        if (a.petukangId == petukang.id &&
-            a.status == AbsenStatus.kerjaBelumBayar) {
-          final aDate = DateFormatter.normalize(a.tanggal);
-          if (!aDate.isBefore(periodeAwal) && !aDate.isAfter(periodeAkhir)) {
-            _localAbsensi[i] = a.copyWith(
-              status: AbsenStatus.kerjaSudahBayar,
-              pembayaranId: bayarId,
-            );
-          }
+      // Cari pembayaran yang sudah ada berdasarkan tanggal bayar.
+      final paymentMatches = existingPayments.where((doc) {
+        final date = parseTanggal(doc.data()['tanggalBayar']);
+        return date != null && tanggalKey(date) == keyBayar;
+      }).toList();
+
+      if (paymentMatches.length > 1) {
+        throw Exception(
+          'Duplikat riwayat pembayaran $workerNama tanggal $keyBayar.',
+        );
+      }
+
+      final existingDoc =
+          paymentMatches.isEmpty ? null : paymentMatches.first;
+      final oldPayment = existingDoc?.data() ?? {};
+
+      // Ambil hari kerja yang berada dalam periode.
+      final hariKerja = <QueryDocumentSnapshot<Map<String, dynamic>>>[];
+
+      // Data historis Ujang tanggal 16 Oktober tidak memiliki dokumen
+      // absensi karena tanggal tersebut sekaligus tanggal pembayaran.
+      // Tanggal ini tetap dihitung sebagai satu hari kerja dan dibayar.
+      final isPembayaranPertamaUjang = nama == 'ujang' &&
+          keyBayar == tanggalKey(tanggal(16, 10));
+      final absensiUjang16 = isPembayaranPertamaUjang
+          ? absensiDocs.where((doc) {
+              final date = tanggalAbsensi(doc.data());
+              return date != null &&
+                  tanggalKey(date) == tanggalKey(tanggal(16, 10));
+            }).toList()
+          : <QueryDocumentSnapshot<Map<String, dynamic>>>[];
+
+      if (absensiUjang16.length > 1) {
+        throw Exception(
+          'Ditemukan lebih dari satu absensi Ujang tanggal 16 Oktober 2026.',
+        );
+      }
+
+      for (final doc in absensiDocs) {
+        final data = doc.data();
+        final date = tanggalAbsensi(data);
+
+        if (date == null) continue;
+
+        final inPeriod =
+            !date.isBefore(periodeAwal) &&
+            !date.isAfter(periodeAkhir);
+
+        if (!inPeriod) continue;
+
+        final status = data['status']?.toString();
+
+        if (status == 'kerjaBelumBayar' ||
+            status == 'kerjaSudahBayar') {
+          hariKerja.add(doc);
         }
       }
 
+      final absensiKhususUjang16BelumTerhitung =
+          isPembayaranPertamaUjang &&
+          !hariKerja.any((doc) {
+            final date = tanggalAbsensi(doc.data());
+            return date != null &&
+                tanggalKey(date) == tanggalKey(tanggal(16, 10));
+          });
 
-      _notifyAll();
+      if (hariKerja.isEmpty &&
+          !absensiKhususUjang16BelumTerhitung) {
+        throw Exception(
+          'Tidak ditemukan absensi kerja untuk $workerNama '
+          'periode ${tanggalKey(periodeAwal)} - '
+          '${tanggalKey(periodeAkhir)}. '
+          'Migrasi dihentikan agar tidak membuat nominal nol.',
+        );
+      }
+
+      // Hitung upah setiap tanggal.
+      double totalKotor =
+          absensiKhususUjang16BelumTerhitung ? 130000.0 : 0.0;
+      final tarifPerHari = <double>[];
+
+      for (final doc in hariKerja) {
+        final data = doc.data();
+        final date = tanggalAbsensi(data)!;
+
+        double tarif;
+
+        if (nama == 'ujang') {
+          tarif = date.isBefore(tanggal(4, 11))
+              ? 130000
+              : 150000;
+        } else {
+          tarif = config['upah'] as double;
+        }
+
+        tarifPerHari.add(tarif);
+        totalKotor += tarif;
+      }
+
+      final jumlahHari = hariKerja.length +
+          (absensiKhususUjang16BelumTerhitung ? 1 : 0);
+      final upahRataRata = totalKotor / jumlahHari;
+
+      // Potongan dari dokumen lama dipertahankan.
+      double potongan =
+          angka(oldPayment['potonganKasbon']);
+
+      double sisaSebelumnya =
+          oldPayment.containsKey('sisaKasbonSebelumnya')
+              ? angka(oldPayment['sisaKasbonSebelumnya'])
+              : saldoKasbonBerjalan;
+
+      // Ketentuan khusus Ujang:
+      // Kasbon Rp600.000 tanggal 1 November
+      // dipotong pada pembayaran 3 November.
+      if (nama == 'ujang' &&
+          keyBayar == tanggalKey(tanggal(3, 11))) {
+        potongan = 600000;
+        sisaSebelumnya = 600000;
+      }
+
+      if (potongan < 0 ||
+          potongan > sisaSebelumnya ||
+          potongan > totalKotor) {
+        throw Exception(
+          'Potongan kasbon tidak valid untuk $workerNama '
+          'tanggal $keyBayar.',
+        );
+      }
+
+      final sisaSetelahnya =
+          (sisaSebelumnya - potongan)
+              .clamp(0.0, double.infinity)
+              .toDouble();
+
+      final totalBersih = totalKotor - potongan;
+
+      final paymentId = existingDoc?.id ?? _uuid.v4();
+
+      final paymentData = <String, dynamic>{
+        'id': paymentId,
+        'petukangId': workerId,
+        'petukangNama': workerNama,
+        'petukangRole': workerRole,
+        'tanggalBayar': bayarDate.toIso8601String(),
+        'periodeAwal': periodeAwal.toIso8601String(),
+        'periodeAkhir': periodeAkhir.toIso8601String(),
+        'jumlahHariKerja': jumlahHari,
+        'upahHarian': upahRataRata,
+        'totalUpahKotor': totalKotor,
+        'sisaKasbonSebelumnya': sisaSebelumnya,
+        'potonganKasbon': potongan,
+        'sisaKasbonSetelahnya': sisaSetelahnya,
+        'totalUpahBersih': totalBersih,
+        'keterangan': oldPayment['keterangan'] ??
+            'Migrasi riwayat pembayaran upah',
+        'createdAt': oldPayment['createdAt'] ??
+            DateTime.now().toIso8601String(),
+      };
+
+      laporan.add(
+        '$workerNama | $keyBayar | '
+        '${tanggalKey(periodeAwal)} - ${tanggalKey(periodeAkhir)} | '
+        '$jumlahHari hari | '
+        'Kotor Rp${totalKotor.toStringAsFixed(0)} | '
+        'Kasbon Rp${potongan.toStringAsFixed(0)} | '
+        'Bersih Rp${totalBersih.toStringAsFixed(0)}',
+      );
+
+      if (simpan) {
+        cekBatasBatch();
+
+        batch.set(
+          firestore.collection('pembayaran_upah').doc(paymentId),
+          paymentData,
+        );
+        jumlahOperasi++;
+
+        // Hanya hari kerja di dalam periode yang menjadi lunas.
+        for (final doc in hariKerja) {
+          cekBatasBatch();
+
+          final date = tanggalAbsensi(doc.data())!;
+
+          final tarif = nama == 'ujang'
+              ? (date.isBefore(tanggal(4, 11)) ? 130000.0 : 150000.0)
+              : config['upah'] as double;
+
+          batch.update(doc.reference, {
+            'status': 'kerjaSudahBayar',
+            'pembayaranId': paymentId,
+            'upahHarian': tarif,
+          });
+
+          jumlahOperasi++;
+        }
+
+        // Buat/perbaiki absensi Ujang 16 Oktober sebagai hari kerja
+        // yang sudah dibayar, terhubung ke slip pembayaran tanggal 16.
+        if (absensiKhususUjang16BelumTerhitung) {
+          cekBatasBatch();
+          final absensiDoc = absensiUjang16.isNotEmpty
+              ? absensiUjang16.first.reference
+              : firestore.collection('absensi').doc(
+                  '${workerId}_${tanggalKey(tanggal(16, 10))}',
+                );
+          batch.set(
+            absensiDoc,
+            {
+              'id': absensiDoc.id,
+              'petukangId': workerId,
+              'tanggal': tanggal(16, 10).toIso8601String().substring(0, 10),
+              'status': 'kerjaSudahBayar',
+              'upahHarian': 130000.0,
+              'pembayaranId': paymentId,
+              'keterangan': absensiUjang16.isNotEmpty
+                  ? (absensiUjang16.first.data()['keterangan'] ??
+                      'Kerja dan dibayar pada 16 Oktober 2026')
+                  : 'Kerja dan dibayar pada 16 Oktober 2026',
+            },
+          );
+          jumlahOperasi++;
+        }
+      }
+
+      saldoKasbonBerjalan = sisaSetelahnya;
+      previousEnd = periodeAkhir;
     }
 
-    return pembayaran;
+    if (simpan) {
+      cekBatasBatch();
+
+      final lastPaymentDate = tanggalBayar.last;
+      final lastPeriodEnd =
+          (config['akhirKhusus'] as Map<String, DateTime>)[
+              tanggalKey(lastPaymentDate)] ??
+          lastPaymentDate;
+
+      final updateWorker = <String, dynamic>{
+        'tanggalBayarTerakhir': lastPaymentDate.toIso8601String(),
+        'tanggalAkhirPeriodeTerakhir':
+            lastPeriodEnd.toIso8601String(),
+        'upahHarian': nama == 'ujang'
+            ? 150000.0
+            : config['upah'],
+      };
+
+      if (nama == 'ujang') {
+        updateWorker['tanggalKenaikanUpah'] =
+            tanggal(4, 11).toIso8601String();
+      }
+
+      batch.update(workerDoc.reference, updateWorker);
+      jumlahOperasi++;
+    }
   }
+
+  // Pastikan kasbon Ujang 1 November Rp600.000
+  // tercatat sudah lunas.
+  final ujangDoc = workersSnapshot.docs.where((doc) {
+    return (doc.data()['nama'] ?? '')
+        .toString()
+        .toLowerCase()
+        .contains('ujang');
+  }).single;
+
+  final kasbonSnapshot = await firestore
+      .collection('kasbon')
+      .where('petukangId', isEqualTo: ujangDoc.id)
+      .get();
+
+  final kasbonUjang = kasbonSnapshot.docs.where((doc) {
+    final data = doc.data();
+    final date = parseTanggal(data['tanggal']);
+
+    return date != null &&
+        tanggalKey(date) == tanggalKey(tanggal(1, 11)) &&
+        angka(data['jumlah']) == 600000;
+  }).toList();
+
+  if (kasbonUjang.length != 1) {
+    throw Exception(
+      'Kasbon Ujang tanggal 1 November Rp600.000 '
+      'harus ditemukan tepat satu dokumen. '
+      'Ditemukan: ${kasbonUjang.length}.',
+    );
+  }
+
+  if (simpan) {
+    cekBatasBatch();
+
+    batch.update(kasbonUjang.first.reference, {
+      'sisa': 0,
+    });
+
+    await batch.commit();
+  }
+
+  laporan.insert(
+    0,
+    simpan
+        ? 'MIGRASI BERHASIL. Total operasi: $jumlahOperasi'
+        : 'SIMULASI SAJA. Belum ada data Firestore yang diubah.',
+  );
+
+  for (final item in laporan) {
+    debugPrint(item);
+  }
+
+  return laporan;
+}
+
+
 }

@@ -22,6 +22,60 @@ class _PembayaranUpahScreenState extends State<PembayaranUpahScreen>
   late TabController _tabController;
   final DatabaseService _db = DatabaseService();
 
+  bool _sedangMemperbaiki = false;
+
+  Future<void> _konfirmasiPerbaikanUpahPetukang() async {
+    final konfirmasi = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Perbaikan Upah Petukang'),
+        content: const Text(
+          'Perbaikan akan langsung memperbarui riwayat pembayaran upah petukang di Firestore.\n\n'
+          'Pastikan konfigurasi perbaikan pada DatabaseService sudah benar. Lanjutkan?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Batal'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            icon: const Icon(Icons.build_circle_outlined),
+            label: const Text('Ya, Perbaiki'),
+          ),
+        ],
+      ),
+    );
+
+    if (konfirmasi != true || !mounted) return;
+
+    setState(() => _sedangMemperbaiki = true);
+    try {
+      await _db.perbaikiRiwayatPembayaranPetukang();
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Perbaikan upah petukang berhasil.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e, stackTrace) {
+      debugPrint('Gagal memperbaiki riwayat upah: $e');
+      debugPrintStack(stackTrace: stackTrace);
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gagal memperbaiki upah petukang: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _sedangMemperbaiki = false);
+    }
+  }
+
   // Form State
   String? _selectedPetukangId;
   DateTime _tanggalBayar = DateTime.now();
@@ -63,15 +117,28 @@ class _PembayaranUpahScreenState extends State<PembayaranUpahScreen>
     super.dispose();
   }
 
+  void _hitungUlangHariKerja(Petukang p) {
+    final unpaid = _db.getUnpaidWorkDays(
+      p.id,
+      _periodeAwal,
+      _periodeAkhir,
+    );
+    _jumlahHariKerja = unpaid.length;
+  }
+
   void _setPetukangData(Petukang p) {
     _selectedPetukangId = p.id;
-    // Per aturan: Tiap periode pembayaran dihitung mulai sehari setelah tanggal pembayaran sebelumnya
+    // Periode baru dimulai sehari setelah akhir periode kerja yang sudah dibayar.
     _periodeAwal = _db.hitungPeriodeAwal(p);
-    _periodeAkhir = _tanggalBayar;
+    // Default akhir periode mengikuti tanggal bayar. Pengguna dapat
+    // memundurkannya jika tanggal pembayaran mencakup hari kerja berikutnya.
+    _periodeAkhir = DateTime(
+      _tanggalBayar.year,
+      _tanggalBayar.month,
+      _tanggalBayar.day,
+    );
 
-    // Hitung hari kerja belum bayar (biru) dalam periode ini
-    final unpaid = _db.getUnpaidWorkDays(p.id, _periodeAwal, _periodeAkhir);
-    _jumlahHariKerja = unpaid.length;
+    _hitungUlangHariKerja(p);
 
     // Rekomendasi potongan kasbon: potong sebagian atau 0 jika tidak ada
     if (p.sisaKasbon > 0) {
@@ -298,7 +365,7 @@ Future<void> _showSlipPreview(PembayaranUpah slip) async {
                             SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                'Periode dihitung otomatis mulai sehari setelah tanggal bayar terakhir.',
+                                'Tentukan tanggal awal dan akhir periode kerja. Tanggal pembayaran dapat berbeda dari akhir periode.',
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: Colors.blue,
@@ -310,51 +377,147 @@ Future<void> _showSlipPreview(PembayaranUpah slip) async {
                       ),
                       const SizedBox(height: 12),
 
+                      // Tanggal pembayaran upah
+                      InkWell(
+                        onTap: () async {
+                          final picked = await showDatePicker(
+                            context: context,
+                            initialDate: _tanggalBayar,
+                            firstDate: DateTime(2020),
+                            lastDate: DateTime(2030),
+                          );
+
+                          if (picked != null) {
+                            setState(() {
+                              _tanggalBayar = DateTime(
+                                picked.year,
+                                picked.month,
+                                picked.day,
+                              );
+
+                              // Periode kerja tidak boleh melewati tanggal bayar.
+                              if (_periodeAkhir.isAfter(_tanggalBayar)) {
+                                _periodeAkhir = _tanggalBayar;
+                              }
+                              if (_periodeAwal.isAfter(_tanggalBayar)) {
+                                _periodeAwal = _tanggalBayar;
+                              }
+                              if (_periodeAkhir.isBefore(_periodeAwal)) {
+                                _periodeAkhir = _periodeAwal;
+                              }
+
+                              _hitungUlangHariKerja(petukang);
+                            });
+                          }
+                        },
+                        child: InputDecorator(
+                          decoration: const InputDecoration(
+                            labelText: 'Tanggal Pembayaran *',
+                            prefixIcon: Icon(Icons.event),
+                            border: OutlineInputBorder(),
+                          ),
+                          child: Text(DateFormatter.format(_tanggalBayar)),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+
+                      const Text(
+                        'Periode Kerja *',
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 8),
                       Row(
                         children: [
-                          // Tanggal Bayar
+                          // Tanggal awal periode kerja
                           Expanded(
                             child: InkWell(
                               onTap: () async {
                                 final picked = await showDatePicker(
                                   context: context,
-                                  initialDate: _tanggalBayar,
+                                  initialDate: _periodeAwal.isAfter(_tanggalBayar)
+                                      ? _tanggalBayar
+                                      : _periodeAwal,
                                   firstDate: DateTime(2020),
-                                  lastDate: DateTime(2030),
+                                  lastDate: _periodeAkhir.isBefore(_tanggalBayar)
+                                      ? _periodeAkhir
+                                      : _tanggalBayar,
                                 );
+
                                 if (picked != null) {
                                   setState(() {
-                                    _tanggalBayar = picked;
-                                    _periodeAkhir = picked;
+                                    _periodeAwal = DateTime(
+                                      picked.year,
+                                      picked.month,
+                                      picked.day,
+                                    );
+                                    _hitungUlangHariKerja(petukang);
                                   });
                                 }
                               },
                               child: InputDecorator(
                                 decoration: const InputDecoration(
-                                  labelText: 'Tanggal Pembayaran *',
-                                  prefixIcon: Icon(Icons.event),
+                                  labelText: 'Tanggal Awal *',
+                                  prefixIcon: Icon(Icons.calendar_today),
                                   border: OutlineInputBorder(),
                                 ),
                                 child: Text(
-                                  DateFormatter.format(_tanggalBayar),
+                                  DateFormatter.formatShort(_periodeAwal),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ),
                             ),
                           ),
                           const SizedBox(width: 12),
-
-                          // Rentang Periode
+                          // Tanggal akhir periode kerja
                           Expanded(
-                            child: InputDecorator(
-                              decoration: const InputDecoration(
-                                labelText: 'Rentang Periode Upah',
-                                prefixIcon: Icon(Icons.date_range),
-                                border: OutlineInputBorder(),
-                              ),
-                              child: Text(
-                                '${DateFormatter.formatShort(_periodeAwal)} s/d ${DateFormatter.formatShort(_periodeAkhir)}',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w600,
+                            child: InkWell(
+                              onTap: () async {
+                                if (_tanggalBayar.isBefore(_periodeAwal)) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Tanggal pembayaran tidak boleh sebelum awal periode kerja.',
+                                      ),
+                                    ),
+                                  );
+                                  return;
+                                }
+
+                                final picked = await showDatePicker(
+                                  context: context,
+                                  initialDate: _periodeAkhir.isBefore(_periodeAwal)
+                                      ? _periodeAwal
+                                      : (_periodeAkhir.isAfter(_tanggalBayar)
+                                          ? _tanggalBayar
+                                          : _periodeAkhir),
+                                  firstDate: _periodeAwal,
+                                  lastDate: _tanggalBayar,
+                                );
+
+                                if (picked != null) {
+                                  setState(() {
+                                    _periodeAkhir = DateTime(
+                                      picked.year,
+                                      picked.month,
+                                      picked.day,
+                                    );
+                                    _hitungUlangHariKerja(petukang);
+                                  });
+                                }
+                              },
+                              child: InputDecorator(
+                                decoration: const InputDecoration(
+                                  labelText: 'Tanggal Akhir *',
+                                  prefixIcon: Icon(Icons.event_available),
+                                  border: OutlineInputBorder(),
+                                ),
+                                child: Text(
+                                  DateFormatter.formatShort(_periodeAkhir),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ),
                             ),
@@ -375,7 +538,7 @@ Future<void> _showSlipPreview(PembayaranUpah slip) async {
                                   style: TextStyle(fontWeight: FontWeight.w600),
                                 ),
                                 Text(
-                                  'Dihitung dari kalender absensi (biru) atau sesuaikan manual',
+                                  'Menghitung absensi Masuk yang belum dibayar dalam rentang periode di atas.',
                                   style: TextStyle(
                                     fontSize: 11,
                                     color: Colors.grey.shade600,
@@ -815,8 +978,44 @@ Future<void> _showSlipPreview(PembayaranUpah slip) async {
             },
           ),
         ),
+
+      
+Padding(
+  padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+  child: SizedBox(
+    width: double.infinity,
+    height: 46,
+    child: ElevatedButton.icon(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.orange.shade700,
+        foregroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+      ),
+      onPressed: _sedangMemperbaiki
+          ? null
+          : _konfirmasiPerbaikanUpahPetukang,
+      icon: _sedangMemperbaiki
+          ? const SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.white,
+              ),
+            )
+          : const Icon(Icons.build_circle_outlined),
+      label: Text(
+        _sedangMemperbaiki
+            ? 'Sedang Memperbaiki...'
+            : 'Perbaikan Upah Petukang',
+      ),
+    ),
+  ),
+),
       ],
-    );
+  );
   }
 
   Widget _miniInfo(String label, String value, {Color? color}) {
@@ -861,12 +1060,16 @@ Future<void> _showSlipPreview(PembayaranUpah slip) async {
       );
       return;
     }
-    if (DateFormatter.normalize(_periodeAkhir) !=
-        DateFormatter.normalize(_tanggalBayar)) {
+    if (DateFormatter.normalize(_periodeAkhir).isBefore(
+          DateFormatter.normalize(_periodeAwal),
+        ) ||
+        DateFormatter.normalize(_periodeAkhir).isAfter(
+          DateFormatter.normalize(_tanggalBayar),
+        )) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text(
-            'Tanggal akhir periode harus sama dengan tanggal pembayaran.',
+            'Periode kerja harus valid: tanggal awal tidak boleh melewati tanggal akhir, dan tanggal akhir tidak boleh melewati tanggal pembayaran.',
           ),
         ),
       );
